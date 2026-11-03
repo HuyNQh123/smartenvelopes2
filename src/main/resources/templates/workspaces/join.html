@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Xác nhận tham gia Quỹ', 'workspaces', ~{::#main-content}, ~{}, ~{})}">
+<!-- ===================================================================
+     Giao diện Tiếp nhận lời mời qua Token liên kết (Thành viên 1 phụ trách)
+     Kế thừa 100% từ Master Layout chung (layouts/main.html)
+     =================================================================== -->
+<body>
+<div id="main-content">
+
+    <div class="row justify-content-center py-4">
+        <div class="col-12 col-md-8 col-lg-6">
+
+            <div class="card card-custom p-4 p-md-5 text-center shadow">
+                
+                <div class="d-inline-flex p-4 bg-primary-subtle text-primary rounded-circle mb-3 mx-auto">
+                    <i class="bi bi-envelope-paper-heart-fill fs-1"></i>
+                </div>
+
+                <h3 class="fw-bold mb-1 text-dark">Lời Mời Tham Gia Quỹ</h3>
+                <p class="text-muted small mb-4">
+                    Bạn nhận được lời mời tham gia cùng quản lý tài chính trên SmartEnvelope
+                </p>
+
+                <!-- Thẻ thông tin Quỹ -->
+                <div class="card bg-light border-0 p-3 rounded-4 mb-4 text-start">
+                    <div class="mb-2">
+                        <small class="text-muted d-block" style="font-size: 0.72rem;">TÊN QUỸ CHUNG</small>
+                        <strong class="fs-5 text-dark" th:text="${invitation.workspace.name}">Tên Quỹ</strong>
+                    </div>
+                    <div class="mb-2" th:if="${invitation.workspace.description != null}">
+                        <small class="text-muted d-block" style="font-size: 0.72rem;">MÔ TẢ</small>
+                        <span class="text-muted small" th:text="${invitation.workspace.description}">Mô tả...</span>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted d-block" style="font-size: 0.72rem;">NGƯỜI GỬI LỜI MỜI</small>
+                        <span class="text-dark fw-medium" th:text="${invitation.invitedBy.fullName} + ' (' + ${invitation.invitedBy.email} + ')'">Nguyễn Văn A</span>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted d-block" style="font-size: 0.72rem;">VAI TRÒ DỰ KIẾN</small>
+                        <span class="badge bg-primary-subtle text-primary border" th:text="${invitation.role}">VIEWER</span>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block" style="font-size: 0.72rem;">EMAIL NHẬN LỜI MỜI</small>
+                        <span class="text-dark fw-semibold" th:text="${invitation.email}">email@domain.com</span>
+                    </div>
+                </div>
+
+                <!-- Trường hợp Email tài khoản trùng khớp -->
+                <div th:if="${isEmailMatch}">
+                    <form th:action="@{/invitations/join/accept}" method="post">
+                        <input type="hidden" name="token" th:value="${invitation.token}" />
+                        <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold shadow-sm mb-2">
+                            <i class="bi bi-check-circle-fill me-2"></i>Đồng Ý & Tham Gia Quỹ Ngay
+                        </button>
+                    </form>
+                    <a th:href="@{/workspaces}" class="btn btn-link text-muted small text-decoration-none">
+                        Để sau / Quay lại danh sách Quỹ
+                    </a>
+                </div>
+
+                <!-- Trường hợp Email không khớp với tài khoản đang đăng nhập -->
+                <div th:unless="${isEmailMatch}" class="alert alert-danger text-start p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 me-2 text-danger"></i>
+                        <strong class="text-danger">Không khớp địa chỉ email</strong>
+                    </div>
+                    <p class="small mb-3">
+                        Bạn đang đăng nhập với tài khoản: <strong th:text="${currentUser.email}">user@domain.com</strong>.<br>
+                        Nhưng lời mời này được gửi đích danh cho: <strong th:text="${invitation.email}">invited@domain.com</strong>.
+                    </p>
+                    <p class="small text-muted mb-0">
+                        Vui lòng <strong>Đăng xuất</strong> và đăng nhập bằng đúng tài khoản email được mời để chấp nhận.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
+

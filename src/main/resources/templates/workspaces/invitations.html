@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Lời mời tham gia Quỹ', 'workspaces', ~{::#main-content}, ~{}, ~{})}">
+<!-- ===================================================================
+     Giao diện Lời mời nhận được (Thành viên 1 phụ trách)
+     Kế thừa 100% từ Master Layout chung (layouts/main.html)
+     =================================================================== -->
+<body>
+<div id="main-content">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-envelope-paper-heart text-primary me-2"></i>Lời Mời Tham Gia Quỹ
+            </h2>
+            <p class="text-muted mb-0">
+                Danh sách các lời mời quản lý tài chính chung được gửi đến email tài khoản của bạn.
+            </p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            <a th:href="@{/workspaces}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách Quỹ
+            </a>
+        </div>
+    </div>
+
+    <!-- Danh sách lời mời -->
+    <div class="card card-custom p-4 shadow-sm">
+        
+        <div th:if="${#lists.isEmpty(invitations)}" class="text-center py-5">
+            <div class="d-inline-flex p-3 bg-light rounded-circle text-muted mb-3">
+                <i class="bi bi-inbox fs-1"></i>
+            </div>
+            <h5 class="fw-bold text-muted mb-1">Không Có Lời Mời Nào Đang Chờ</h5>
+            <p class="text-muted small mb-3">
+                Khi ai đó mời email của bạn tham gia vào Quỹ chung của họ, lời mời sẽ hiển thị tại đây.
+            </p>
+            <a th:href="@{/workspaces}" class="btn btn-sm btn-primary">
+                <i class="bi bi-briefcase me-1"></i>Xem các Quỹ hiện có
+            </a>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(invitations)}" class="list-group list-group-flush">
+            <div th:each="inv : ${invitations}" class="list-group-item p-4 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                
+                <div class="d-flex align-items-start">
+                    <div class="p-3 bg-primary-subtle text-primary rounded-4 me-3">
+                        <i class="bi bi-wallet2 fs-3"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1" th:text="${inv.workspace.name}">Tên Quỹ</h5>
+                        <p class="text-muted small mb-2" th:text="${inv.workspace.description} ?: 'Không có mô tả.'">Mô tả Quỹ</p>
+                        <div class="small text-muted">
+                            <span class="me-3">Người mời: <strong th:text="${inv.invitedBy.fullName}">Nguyễn Văn A</strong> (<span th:text="${inv.invitedBy.email}">a@example.com</span>)</span>
+                            <span class="me-3">Vai trò: <span class="badge bg-primary-subtle text-primary border" th:text="${inv.role}">VIEWER</span></span>
+                            <span>Hết hạn vào: <span th:text="${#temporals.format(inv.expiresAt, 'dd/MM/yyyy HH:mm')}">Hết hạn</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <form th:action="@{/invitations/{id}/accept(id=${inv.id})}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-success px-3 py-2 fw-semibold">
+                            <i class="bi bi-check2-circle me-1"></i>Chấp Nhận Tham Gia
+                        </button>
+                    </form>
+                    <form th:action="@{/invitations/{id}/decline(id=${inv.id})}" method="post" class="m-0"
+                          onsubmit="return confirm('Bạn có chắc chắn muốn từ chối lời mời này?');">
+                        <button type="submit" class="btn btn-outline-danger px-3 py-2">
+                            <i class="bi bi-x-circle me-1"></i>Từ Chối
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>
+

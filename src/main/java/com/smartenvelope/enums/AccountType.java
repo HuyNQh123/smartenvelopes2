@@ -1,12 +1,12 @@
 package com.smartenvelope.enums;
 
 /**
- * Định nghĩa các loại tài khoản nguồn tiền (Tiền mặt, Ngân hàng, Ví điện tử).
+ * Loại tài khoản tiền tệ (tiền mặt, ngân hàng, thẻ tín dụng, tài khoản tiết kiệm).
  * Phụ trách bởi: Thành viên 2.
  */
 public enum AccountType {
     CASH,
     BANK,
-    E_WALLET
+    CREDIT,
+    SAVINGS
 }
-

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Thêm danh mục hệ thống mới', 'admin-categories', ~{::#main-content}, ~{}, ~{})}">
+<!-- ===================================================================
+     Giao diện Thêm mới danh mục mặc định của hệ thống - Admin
+     Kế thừa 100% Master Layout (layouts/main.html)
+     Phụ trách bởi: Thành viên 1.
+     =================================================================== -->
+<body>
+<div id="main-content">
+
+    <!-- Breadcrumb điều hướng -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/admin/categories}" class="text-decoration-none">Quản lý danh mục</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Thêm danh mục mới</li>
+        </ol>
+    </nav>
+
+    <!-- Tiêu đề -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-plus-circle-fill text-primary me-2"></i>Thêm danh mục hệ thống mới
+            </h2>
+            <p class="text-muted mb-0">Tạo danh mục thu hoặc chi mặc định áp dụng chung cho toàn bộ người dùng.</p>
+        </div>
+        <a th:href="@{/admin/categories}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại
+        </a>
+    </div>
+
+    <!-- Form tạo danh mục -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card card-custom p-4 bg-white border">
+                <form th:action="@{/admin/categories/create}" th:object="${categoryRequest}" method="post">
+                    
+                    <!-- 1. Tên danh mục -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-semibold text-dark">
+                            Tên danh mục <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="name" th:field="*{name}" class="form-control"
+                               placeholder="Ví dụ: Ăn uống, Tiền nhà, Lương thưởng..." 
+                               th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" />
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        <small class="text-muted">Tên danh mục không được trùng với các danh mục cùng loại đã tồn tại.</small>
+                    </div>
+
+                    <!-- 2. Loại danh mục (Thu/Chi) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">
+                            Loại danh mục <span class="text-danger">*</span>
+                        </label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check" th:each="t : ${categoryTypes}">
+                                <input class="form-check-input" type="radio" th:field="*{type}" 
+                                       th:value="${t}" th:id="'type_' + ${t}" />
+                                <label class="form-check-label fw-medium" th:for="'type_' + ${t}"
+                                       th:text="${t == T(com.smartenvelope.enums.CategoryType).INCOME ? 'Thu nhập (INCOME)' : 'Chi tiêu (EXPENSE)'}">
+                                    Chi tiêu
+                                </label>
+                            </div>
+                        </div>
+                        <div class="text-danger small mt-1" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <!-- 3. Icon Bootstrap -->
+                        <div class="col-md-6">
+                            <label for="icon" class="form-label fw-semibold text-dark">Biểu tượng (Icon)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-tag"></i></span>
+                                <input type="text" id="icon" th:field="*{icon}" class="form-control"
+                                       placeholder="bi-cup-hot, bi-house, bi-wallet2..." />
+                            </div>
+                            <small class="text-muted">Sử dụng tên class của Bootstrap Icons (ví dụ: bi-cart, bi-bag, bi-gift...)</small>
+                        </div>
+
+                        <!-- 4. Màu sắc đại diện -->
+                        <div class="col-md-6">
+                            <label for="color" class="form-label fw-semibold text-dark">Mã màu nhận diện</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color" id="colorPicker" 
+                                       th:value="${categoryRequest.color != null ? categoryRequest.color : '#0d6efd'}" 
+                                       onchange="document.getElementById('colorInput').value = this.value;" />
+                                <input type="text" id="colorInput" th:field="*{color}" class="form-control" 
+                                       placeholder="#0d6efd" onchange="document.getElementById('colorPicker').value = this.value;" />
+                            </div>
+                            <small class="text-muted">Mã màu Hex hiển thị trực quan trên giao diện ứng dụng.</small>
+                        </div>
+                    </div>
+
+                    <!-- 5. Trạng thái kích hoạt -->
+                    <div class="mb-4 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="isActive" th:field="*{isActive}" checked />
+                        <label class="form-check-label fw-semibold text-dark" for="isActive">Kích hoạt danh mục này ngay sau khi tạo</label>
+                    </div>
+
+                    <!-- Nút bấm submit -->
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a th:href="@{/admin/categories}" class="btn btn-outline-secondary px-4">Hủy</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-circle-fill me-1"></i>Lưu danh mục
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
+

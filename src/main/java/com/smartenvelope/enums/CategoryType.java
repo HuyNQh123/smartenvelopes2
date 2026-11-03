@@ -1,11 +1,10 @@
 package com.smartenvelope.enums;
 
 /**
- * Định nghĩa phân loại danh mục (Danh mục chi tiêu hoặc Danh mục thu nhập).
- * Phụ trách bởi: Thành viên 3.
+ * Phân loại danh mục: Chi tiêu (EXPENSE) hoặc Thu nhập (INCOME).
+ * Phụ trách bởi: Thành viên 2.
  */
 public enum CategoryType {
     EXPENSE,
     INCOME
 }
-
