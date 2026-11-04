@@ -1,26 +1,53 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Danh sách tài khoản nguồn tiền (Phụ trách bởi: Thành viên 2) -->
-<head th:replace="~{fragments/header :: header('Danh sách tài khoản')}">
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Tài khoản tiền', 'accounts', ~{::#main-content}, ~{}, ~{})}">
 <body>
-<div class="d-flex">
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-    <main class="flex-grow-1 p-4">
+    <div id="main-content">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Tài Khoản Của Tôi</h2>
+            <h2 class="fw-bold mb-0">Tài khoản của tôi</h2>
+
             <a th:href="@{/accounts/new}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Thêm Tài Khoản
+                <i class="bi bi-plus-lg me-1"></i>
+                Thêm tài khoản
             </a>
         </div>
-        <p class="text-muted">Quản lý các nguồn tiền: Tiền mặt, Ngân hàng, Ví điện tử.</p>
-        <!-- TODO: Thành viên 2 hiển thị danh sách thẻ tài khoản và số dư -->
-        <div class="card shadow-sm border-0 p-4 mt-3">
-            <p class="text-muted mb-0">Chưa có tài khoản nào được tạo.</p>
+
+        <p class="text-muted">
+            Quản lý các tài khoản tiền thuộc quỹ đang chọn.
+        </p>
+
+        <div th:if="${#lists.isEmpty(accounts)}"
+             class="card shadow-sm border-0 p-4 mt-3">
+            <p class="text-muted mb-0">
+                Quỹ này chưa có tài khoản tiền nào.
+            </p>
         </div>
-    </main>
-</div>
-<div th:replace="~{fragments/footer :: footer}"></div>
+
+        <div th:unless="${#lists.isEmpty(accounts)}"
+             class="card shadow-sm border-0 p-3 mt-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tên tài khoản</th>
+                            <th>Loại</th>
+                            <th class="text-end">Số dư</th>
+                            <th>Đơn vị</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="account : ${accounts}">
+                            <td th:text="${account.name}"></td>
+                            <td th:text="${account.type}"></td>
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(account.balance, 1, 'POINT', 0, 'COMMA')}">
+                            </td>
+                            <td th:text="${account.currency}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
-

@@ -1,39 +1,82 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Thêm mới / Cập nhật tài khoản (Phụ trách bởi: Thành viên 2) -->
-<head th:replace="~{fragments/header :: header('Thông tin tài khoản')}">
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Thêm tài khoản tiền', 'accounts', ~{::#main-content}, ~{}, ~{})}">
 <body>
-<div class="d-flex">
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-    <main class="flex-grow-1 p-4">
-        <h2>Thêm / Cập Nhật Tài Khoản</h2>
-        <!-- TODO: Thành viên 2 thiết kế form nhập tên tài khoản, loại tài khoản, số dư ban đầu -->
-        <div class="card shadow-sm border-0 p-4 mt-3" style="max-width: 600px;">
-            <form>
-                <div class="mb-3">
-                    <label class="form-label">Tên tài khoản</label>
-                    <input type="text" class="form-control" placeholder="Ví dụ: Ví MoMo, Techcombank...">
+    <div id="main-content">
+        <h2 class="fw-bold mb-3">Thêm tài khoản tiền</h2>
+
+        <div class="card shadow-sm border-0 p-4">
+            <form th:action="@{/accounts}"
+                  th:object="${accountRequest}"
+                  method="post">
+
+                <div th:if="${#fields.hasGlobalErrors()}"
+                     class="alert alert-danger">
+                    <p th:each="error : ${#fields.globalErrors()}"
+                       th:text="${error}"
+                       class="mb-0"></p>
                 </div>
+
                 <div class="mb-3">
-                    <label class="form-label">Loại tài khoản</label>
-                    <select class="form-select">
+                    <label for="name" class="form-label">
+                        Tên tài khoản
+                    </label>
+                    <input id="name"
+                           type="text"
+                           th:field="*{name}"
+                           class="form-control"
+                           maxlength="100"
+                           placeholder="Ví dụ: Ví tiền mặt"
+                           required>
+                    <div th:errors="*{name}"
+                         class="text-danger small mt-1"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="type" class="form-label">
+                        Loại tài khoản
+                    </label>
+                    <select id="type"
+                            th:field="*{type}"
+                            class="form-select"
+                            required>
+                        <option value="">-- Chọn loại --</option>
                         <option value="CASH">Tiền mặt</option>
-                        <option value="BANK">Tài khoản ngân hàng</option>
-                        <option value="E_WALLET">Ví điện tử</option>
+                        <option value="BANK">Ngân hàng</option>
                     </select>
+                    <div th:errors="*{type}"
+                         class="text-danger small mt-1"></div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Số dư ban đầu</label>
-                    <input type="number" class="form-control" placeholder="0">
+
+                <div class="mb-4">
+                    <label for="initialBalance" class="form-label">
+                        Số dư ban đầu (VND)
+                    </label>
+                    <input id="initialBalance"
+                           type="number"
+                           th:field="*{initialBalance}"
+                           class="form-control"
+                           min="0"
+                           step="1"
+                           required>
+                    <div class="form-text">
+                        Nhập tiền đang có sẵn, ví dụ 200000.
+                        Khoản này không tự tính thành thu nhập tháng.
+                    </div>
+                    <div th:errors="*{initialBalance}"
+                         class="text-danger small mt-1"></div>
                 </div>
-                <button type="button" class="btn btn-primary">Lưu Tài Khoản</button>
-                <a th:href="@{/accounts}" class="btn btn-secondary ms-2">Hủy</a>
+
+                <button type="submit" class="btn btn-primary">
+                    Lưu tài khoản
+                </button>
+
+                <a th:href="@{/accounts}"
+                   class="btn btn-outline-secondary ms-2">
+                    Hủy
+                </a>
             </form>
         </div>
-    </main>
-</div>
-<div th:replace="~{fragments/footer :: footer}"></div>
+    </div>
 </body>
 </html>
-
