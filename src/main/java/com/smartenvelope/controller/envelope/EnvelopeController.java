@@ -7,11 +7,13 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.smartenvelope.dto.envelope.EnvelopeAllocationRequest;
 import com.smartenvelope.dto.envelope.EnvelopeRequest;
 import com.smartenvelope.enums.BudgetStatus;
 import com.smartenvelope.service.EnvelopeService;
@@ -30,8 +32,7 @@ public class EnvelopeController {
 
     @GetMapping
     public String list(
-            @RequestParam(name = "periodId", required = false)
-            Long periodId,
+            @RequestParam(name = "periodId", required = false) Long periodId,
             Model model) {
 
         if (periodId == null) {
@@ -47,7 +48,7 @@ public class EnvelopeController {
         model.addAttribute(
                 "canCreate",
                 period.getStatus() == BudgetStatus.DRAFT
-                        && envelopeService.canManageCurrentWorkspace());
+                && envelopeService.canManageCurrentWorkspace());
 
         return "envelope/list";
     }
@@ -82,8 +83,7 @@ public class EnvelopeController {
     @PostMapping
     public String create(
             @RequestParam("periodId") Long periodId,
-            @Valid @ModelAttribute("envelopeRequest")
-            EnvelopeRequest request,
+            @Valid @ModelAttribute("envelopeRequest") EnvelopeRequest request,
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
@@ -129,5 +129,45 @@ public class EnvelopeController {
         model.addAttribute(
                 "categories",
                 envelopeService.getAvailableCategories());
+    }
+
+    @PostMapping("/{id}/allocation")
+    public String allocate(
+            @PathVariable("id") Long envelopeId,
+            @RequestParam("periodId") Long periodId,
+            @Valid @ModelAttribute("allocationRequest") EnvelopeAllocationRequest request,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes) {
+
+        envelopeService.getPeriod(periodId);
+
+        if (!envelopeService.canManageCurrentWorkspace()) {
+            throw new AccessDeniedException(
+                    "Bạn không có quyền phân bổ tiền.");
+        }
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    bindingResult.getAllErrors()
+                            .get(0).getDefaultMessage());
+
+            return "redirect:/envelopes?periodId=" + periodId;
+        }
+
+        try {
+            envelopeService.allocateEnvelope(
+                    periodId, envelopeId, request);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Đã lưu mức phân bổ.");
+        } catch (IllegalArgumentException exception) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    exception.getMessage());
+        }
+
+        return "redirect:/envelopes?periodId=" + periodId;
     }
 }

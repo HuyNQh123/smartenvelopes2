@@ -1,77 +1,110 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/main :: layout('Phong bì', 'envelopes', ~{::#main-content}, ~{}, ~{})}">
+    th:replace="~{layouts/main :: layout('Phong bì', 'envelopes', ~{::#main-content}, ~{}, ~{})}">
+
 <body>
-<div id="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="fw-bold mb-0">Phong bì chi tiêu</h2>
+    <div id="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="fw-bold mb-0">Phong bì chi tiêu</h2>
 
-        <a th:if="${canCreate}"
-           th:href="@{/envelopes/new(periodId=${period.id})}"
-           class="btn btn-primary">
-            Thêm phong bì
-        </a>
-    </div>
-
-    <p class="text-muted" th:text="${period.name}"></p>
-
-    <div th:if="${successMessage}"
-         class="alert alert-success"
-         th:text="${successMessage}"></div>
-
-    <div th:if="${errorMessage}"
-         class="alert alert-danger"
-         th:text="${errorMessage}"></div>
-
-    <a th:href="@{/budgets}"
-       class="btn btn-outline-secondary mb-3">
-        Quay lại các kỳ
-    </a>
-
-    <div th:if="${#lists.isEmpty(envelopes)}"
-         class="card shadow-sm border-0 p-4">
-        <p class="text-muted mb-0">
-            Kỳ này chưa có phong bì.
-        </p>
-    </div>
-
-    <div th:unless="${#lists.isEmpty(envelopes)}"
-         class="card shadow-sm border-0 p-3">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                <tr>
-                    <th>Tên phong bì</th>
-                    <th class="text-end">Đã phân bổ</th>
-                    <th class="text-end">Đã chi</th>
-                    <th class="text-end">Còn lại</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr th:each="envelope : ${envelopes}">
-                    <td th:text="${envelope.name}"></td>
-
-                    <td class="text-end"
-                        th:text="${#numbers.formatDecimal(envelope.allocatedAmount, 1, 'POINT', 0, 'COMMA')}">
-                    </td>
-
-                    <td class="text-end"
-                        th:text="${#numbers.formatDecimal(envelope.spentAmount, 1, 'POINT', 0, 'COMMA')}">
-                    </td>
-
-                    <td class="text-end"
-                        th:text="${#numbers.formatDecimal(envelope.remainingAmount, 1, 'POINT', 0, 'COMMA')}">
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+            <a th:if="${canCreate}" th:href="@{/envelopes/new(periodId=${period.id})}" class="btn btn-primary">
+                Thêm phong bì
+            </a>
         </div>
 
-        <p class="text-muted small mt-3 mb-0">
-            Đơn vị: VND.
+        <p class="text-muted" th:text="${period.name}"></p>
+        <div class="alert alert-info">
+            <div>
+                Thu nhập đã ghi nhận:
+                <strong th:text="${#numbers.formatDecimal(period.totalIncome, 1, 'POINT', 0, 'COMMA')}"></strong>
+                VND
+            </div>
+
+            <div>
+                Đã phân bổ:
+                <strong th:text="${#numbers.formatDecimal(period.totalAllocated, 1, 'POINT', 0, 'COMMA')}"></strong>
+                VND
+            </div>
+
+            <div>
+                Thu nhập còn chưa phân bổ:
+                <strong
+                    th:text="${#numbers.formatDecimal(period.totalIncome.subtract(period.totalAllocated), 1, 'POINT', 0, 'COMMA')}"></strong>
+                VND
+            </div>
+        </div>
+
+        <p th:if="${period.totalIncome.signum() == 0}" class="text-muted">
+            Kỳ chưa có thu nhập được ghi nhận nên hiện chỉ lưu được mức 0 VND.
         </p>
+
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <a th:href="@{/budgets}" class="btn btn-outline-secondary mb-3">
+            Quay lại các kỳ
+        </a>
+
+        <div th:if="${#lists.isEmpty(envelopes)}" class="card shadow-sm border-0 p-4">
+            <p class="text-muted mb-0">
+                Kỳ này chưa có phong bì.
+            </p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(envelopes)}" class="card shadow-sm border-0 p-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tên phong bì</th>
+                            <th class="text-end">Đã phân bổ</th>
+                            <th class="text-end">Đã chi</th>
+                            <th class="text-end">Còn lại</th>
+                            <th th:if="${canCreate}">Nhập mức phân bổ</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="envelope : ${envelopes}">
+                            <td th:text="${envelope.name}"></td>
+
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(envelope.allocatedAmount, 1, 'POINT', 0, 'COMMA')}">
+                            </td>
+
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(envelope.spentAmount, 1, 'POINT', 0, 'COMMA')}">
+                            </td>
+
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(envelope.remainingAmount, 1, 'POINT', 0, 'COMMA')}">
+                            </td>
+                            <td th:if="${canCreate}">
+                                <form
+                                    th:action="@{/envelopes/{id}/allocation(id=${envelope.id}, periodId=${period.id})}"
+                                    method="post" class="d-flex gap-2">
+
+                                    <input type="hidden" name="periodVersion" th:value="${period.version}">
+
+                                    <input type="number" name="amount" th:value="${envelope.allocatedAmount}"
+                                        class="form-control" min="0" step="1" aria-label="Mức phân bổ VND" required>
+
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        Lưu
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="text-muted small mt-3 mb-0">
+                Đơn vị: VND.
+            </p>
+        </div>
     </div>
-</div>
 </body>
+
 </html>
