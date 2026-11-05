@@ -1,82 +1,86 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/main :: layout('Kỳ ngân sách', 'budgets', ~{::#main-content}, ~{}, ~{})}">
+    th:replace="~{layouts/main :: layout('Kỳ ngân sách', 'budgets', ~{::#main-content}, ~{}, ~{})}">
+
 <body>
-<div id="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="fw-bold mb-0">Kỳ ngân sách</h2>
+    <div id="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="fw-bold mb-0">Kỳ ngân sách</h2>
 
-        <a th:href="@{/budgets/new}" class="btn btn-primary">
-            Tạo kỳ ngân sách
-        </a>
-    </div>
+            <a th:href="@{/budgets/new}" class="btn btn-primary">
+                Tạo kỳ ngân sách
+            </a>
+        </div>
 
-    <p class="text-muted">
-        Các kỳ ngân sách thuộc quỹ đang chọn, sắp xếp từ mới đến cũ.
-    </p>
-
-    <div th:if="${#lists.isEmpty(periods)}"
-         class="card shadow-sm border-0 p-4">
-        <p class="text-muted mb-0">
-            Quỹ này chưa có kỳ ngân sách.
+        <p class="text-muted">
+            Các kỳ ngân sách thuộc quỹ đang chọn, sắp xếp từ mới đến cũ.
         </p>
-    </div>
 
-    <div th:unless="${#lists.isEmpty(periods)}"
-         class="card shadow-sm border-0 p-3">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                <tr>
-                    <th>Tên kỳ</th>
-                    <th>Bắt đầu</th>
-                    <th>Kết thúc</th>
-                    <th class="text-end">Thu nhập đã ghi nhận</th>
-                    <th class="text-end">Đã phân bổ</th>
-                    <th>Trạng thái</th>
-                </tr>
-                </thead>
+        <div th:if="${#lists.isEmpty(periods)}" class="card shadow-sm border-0 p-4">
+            <p class="text-muted mb-0">
+                Quỹ này chưa có kỳ ngân sách.
+            </p>
+        </div>
 
-                <tbody>
-                <tr th:each="period : ${periods}">
-                    <td th:text="${period.name}"></td>
+        <div th:unless="${#lists.isEmpty(periods)}" class="card shadow-sm border-0 p-3">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tên kỳ</th>
+                            <th>Bắt đầu</th>
+                            <th>Kết thúc</th>
+                            <th class="text-end">Thu nhập đã ghi nhận</th>
+                            <th class="text-end">Đã phân bổ</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
 
-                    <td th:text="${#temporals.format(period.startDate, 'dd/MM/yyyy')}">
-                    </td>
+                    <tbody>
+                        <tr th:each="period : ${periods}">
+                            <td th:text="${period.name}"></td>
 
-                    <td th:text="${#temporals.format(period.endDate, 'dd/MM/yyyy')}">
-                    </td>
+                            <td th:text="${#temporals.format(period.startDate, 'dd/MM/yyyy')}">
+                            </td>
 
-                    <td class="text-end"
-                        th:text="${#numbers.formatDecimal(period.totalIncome, 1, 'POINT', 0, 'COMMA')}">
-                    </td>
+                            <td th:text="${#temporals.format(period.endDate, 'dd/MM/yyyy')}">
+                            </td>
 
-                    <td class="text-end"
-                        th:text="${#numbers.formatDecimal(period.totalAllocated, 1, 'POINT', 0, 'COMMA')}">
-                    </td>
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(period.totalIncome, 1, 'POINT', 0, 'COMMA')}">
+                            </td>
 
-                    <td th:switch="${period.status.name()}">
-                        <span th:case="'DRAFT'"
-                              class="badge bg-secondary">
-                            Nháp
-                        </span>
-                        <span th:case="'CONFIRMED'"
-                              class="badge bg-success">
-                            Đã xác nhận
-                        </span>
-                        <span th:case="'CLOSED'"
-                              class="badge bg-dark">
-                            Đã đóng
-                        </span>
-                        <span th:case="*"
-                              th:text="${period.status}">
-                        </span>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+                            <td class="text-end"
+                                th:text="${#numbers.formatDecimal(period.totalAllocated, 1, 'POINT', 0, 'COMMA')}">
+                            </td>
+
+                            <td th:switch="${period.status.name()}">
+                                <span th:case="'DRAFT'" class="badge bg-secondary">
+                                    Nháp
+                                </span>
+                                <span th:case="'CONFIRMED'" class="badge bg-success">
+                                    Đã xác nhận
+                                </span>
+                                <span th:case="'CLOSED'" class="badge bg-dark">
+                                    Đã đóng
+                                </span>
+                                <span th:case="*" th:text="${period.status}">
+                                </span>
+                            </td>
+
+                            <td>
+                                <a th:href="@{/envelopes(periodId=${period.id})}"
+                                    class="btn btn-sm btn-outline-primary">
+                                    Xem phong bì
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>

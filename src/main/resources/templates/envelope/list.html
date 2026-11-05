@@ -1,26 +1,77 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Danh sách phong bì ngân sách (Phụ trách bởi: Thành viên 2) -->
-<head th:replace="~{fragments/header :: header('Danh sách phong bì')}">
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Phong bì', 'envelopes', ~{::#main-content}, ~{}, ~{})}">
 <body>
-<div class="d-flex">
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-    <main class="flex-grow-1 p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Phong Bì Ngân Sách</h2>
-            <a th:href="@{/envelopes/new}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Tạo Phong Bì
-            </a>
+<div id="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0">Phong bì chi tiêu</h2>
+
+        <a th:if="${canCreate}"
+           th:href="@{/envelopes/new(periodId=${period.id})}"
+           class="btn btn-primary">
+            Thêm phong bì
+        </a>
+    </div>
+
+    <p class="text-muted" th:text="${period.name}"></p>
+
+    <div th:if="${successMessage}"
+         class="alert alert-success"
+         th:text="${successMessage}"></div>
+
+    <div th:if="${errorMessage}"
+         class="alert alert-danger"
+         th:text="${errorMessage}"></div>
+
+    <a th:href="@{/budgets}"
+       class="btn btn-outline-secondary mb-3">
+        Quay lại các kỳ
+    </a>
+
+    <div th:if="${#lists.isEmpty(envelopes)}"
+         class="card shadow-sm border-0 p-4">
+        <p class="text-muted mb-0">
+            Kỳ này chưa có phong bì.
+        </p>
+    </div>
+
+    <div th:unless="${#lists.isEmpty(envelopes)}"
+         class="card shadow-sm border-0 p-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Tên phong bì</th>
+                    <th class="text-end">Đã phân bổ</th>
+                    <th class="text-end">Đã chi</th>
+                    <th class="text-end">Còn lại</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="envelope : ${envelopes}">
+                    <td th:text="${envelope.name}"></td>
+
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(envelope.allocatedAmount, 1, 'POINT', 0, 'COMMA')}">
+                    </td>
+
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(envelope.spentAmount, 1, 'POINT', 0, 'COMMA')}">
+                    </td>
+
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(envelope.remainingAmount, 1, 'POINT', 0, 'COMMA')}">
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
-        <p class="text-muted">Quản lý hạn mức chi tiêu cho từng danh mục theo phương pháp phong bì.</p>
-        <!-- TODO: Thành viên 2 hiển thị danh sách phong bì và thanh tiến độ chi tiêu -->
-        <div class="card shadow-sm border-0 p-4 mt-3">
-            <p class="text-muted mb-0">Chưa có phong bì ngân sách nào trong chu kỳ này.</p>
-        </div>
-    </main>
+
+        <p class="text-muted small mt-3 mb-0">
+            Đơn vị: VND.
+        </p>
+    </div>
 </div>
-<div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
-

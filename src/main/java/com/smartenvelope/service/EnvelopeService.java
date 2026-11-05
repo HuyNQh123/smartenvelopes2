@@ -1,13 +1,162 @@
 package com.smartenvelope.service;
 
-import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
+import java.util.List;
 
-/**
- * Service xử lý nghiệp vụ phong bì ngân sách (phân bổ số tiền cho từng phong bì, tính hạn mức còn lại).
- * Phụ trách bởi: Thành viên 2.
- */
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.smartenvelope.dto.envelope.EnvelopeRequest;
+import com.smartenvelope.entity.BudgetPeriod;
+import com.smartenvelope.entity.Category;
+import com.smartenvelope.entity.Envelope;
+import com.smartenvelope.enums.BudgetStatus;
+import com.smartenvelope.enums.CategoryType;
+import com.smartenvelope.enums.MemberRole;
+import com.smartenvelope.repository.BudgetPeriodRepository;
+import com.smartenvelope.repository.CategoryRepository;
+import com.smartenvelope.repository.EnvelopeRepository;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.validation.Validator;
+
 @Service
 public class EnvelopeService {
-    // TODO: Thành viên 2 triển khai các phương thức nghiệp vụ quản lý Envelope
-}
 
+    private final EnvelopeRepository envelopeRepository;
+    private final BudgetPeriodRepository budgetPeriodRepository;
+    private final CategoryRepository categoryRepository;
+    private final WorkspaceContextService workspaceContextService;
+    private final CurrentUserService currentUserService;
+    private final Validator validator;
+    private final EntityManager entityManager;
+
+    public EnvelopeService(
+            EnvelopeRepository envelopeRepository,
+            BudgetPeriodRepository budgetPeriodRepository,
+            CategoryRepository categoryRepository,
+            WorkspaceContextService workspaceContextService,
+            CurrentUserService currentUserService,
+            Validator validator,
+            EntityManager entityManager) {
+
+        this.envelopeRepository = envelopeRepository;
+        this.budgetPeriodRepository = budgetPeriodRepository;
+        this.categoryRepository = categoryRepository;
+        this.workspaceContextService = workspaceContextService;
+        this.currentUserService = currentUserService;
+        this.validator = validator;
+        this.entityManager = entityManager;
+    }
+
+    @Transactional(readOnly = true)
+    public BudgetPeriod getPeriod(Long periodId) {
+        Long workspaceId =
+                workspaceContextService.getCurrentWorkspaceId();
+
+        BudgetPeriod period = budgetPeriodRepository.findById(periodId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Kỳ không tồn tại hoặc bạn không có quyền truy cập."));
+
+        if (!workspaceId.equals(period.getWorkspace().getId())) {
+            throw new AccessDeniedException(
+                    "Kỳ không tồn tại hoặc bạn không có quyền truy cập.");
+        }
+
+        return period;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Envelope> getEnvelopes(Long periodId) {
+        getPeriod(periodId);
+
+        return envelopeRepository.findByBudgetPeriodId(periodId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Category> getAvailableCategories() {
+        Long userId = currentUserService.getCurrentUserId();
+
+        return categoryRepository
+                .findAllAvailableForUserAndType(
+                        userId, CategoryType.EXPENSE)
+                .stream()
+                .filter(category ->
+                        Boolean.TRUE.equals(category.getIsActive()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canManageCurrentWorkspace() {
+        Long workspaceId =
+                workspaceContextService.getCurrentWorkspaceId();
+
+        return workspaceContextService
+                .getCurrentUserRoleInWorkspace(workspaceId)
+                .map(role ->
+                        role == MemberRole.OWNER
+                                || role == MemberRole.MANAGER)
+                .orElse(false);
+    }
+
+    @Transactional
+    public void createEnvelope(
+            Long periodId,
+            EnvelopeRequest request) {
+
+        BudgetPeriod period = getPeriod(periodId);
+
+        if (!canManageCurrentWorkspace()) {
+            throw new AccessDeniedException(
+                    "Chỉ chủ quỹ hoặc người quản lý được thêm phong bì.");
+        }
+
+        // Tuần tự hóa thao tác thêm phong bì vào cùng một kỳ.
+        entityManager.refresh(
+                period, LockModeType.PESSIMISTIC_WRITE);
+
+        if (period.getStatus() != BudgetStatus.DRAFT) {
+            throw new IllegalArgumentException(
+                    "Chỉ được thêm phong bì vào kỳ đang nháp.");
+        }
+
+        var errors = validator.validate(request);
+
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(
+                    errors.iterator().next().getMessage());
+        }
+
+        // Chỉ nhận danh mục chi tiêu đang hoạt động,
+        // thuộc hệ thống hoặc thuộc người dùng hiện tại.
+        Category category = getAvailableCategories()
+                .stream()
+                .filter(item ->
+                        item.getId().equals(request.getCategoryId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Danh mục không hợp lệ hoặc đã ngừng sử dụng."));
+
+        if (envelopeRepository
+                .findByBudgetPeriodIdAndCategoryId(
+                        periodId, category.getId())
+                .isPresent()) {
+
+            throw new IllegalArgumentException(
+                    "Kỳ này đã có phong bì cho danh mục đã chọn.");
+        }
+
+        Envelope envelope = new Envelope();
+        envelope.setBudgetPeriod(period);
+        envelope.setCategory(category);
+        envelope.setName(request.getName().strip());
+        envelope.setAllocatedAmount(BigDecimal.ZERO);
+        envelope.setSpentAmount(BigDecimal.ZERO);
+        envelope.setRemainingAmount(BigDecimal.ZERO);
+        envelope.setWarningThreshold(80);
+
+        envelopeRepository.saveAndFlush(envelope);
+    }
+}
