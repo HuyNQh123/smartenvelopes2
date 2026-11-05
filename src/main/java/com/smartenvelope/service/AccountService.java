@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.smartenvelope.dto.account.AccountRequest;
+import com.smartenvelope.dto.account.AccountUpdateRequest;
 import com.smartenvelope.entity.Account;
 import com.smartenvelope.entity.Workspace;
 import com.smartenvelope.enums.AccountType;
@@ -79,4 +80,64 @@ public class AccountService {
 
         accountRepository.save(account);
     }
+    private Account getAccountForEditing(Long accountId) {
+    Long workspaceId = workspaceContextService.getCurrentWorkspaceId();
+
+    MemberRole role = workspaceContextService
+            .getCurrentUserRoleInWorkspace(workspaceId)
+            .orElseThrow(() ->
+                    new AccessDeniedException("Bạn không có quyền truy cập quỹ."));
+
+    if (role != MemberRole.OWNER && role != MemberRole.MANAGER) {
+        throw new AccessDeniedException(
+                "Chỉ chủ quỹ hoặc người quản lý được sửa tài khoản tiền.");
+    }
+
+    Account account = accountRepository.findById(accountId)
+            .orElseThrow(() ->
+                    new AccessDeniedException(
+                            "Tài khoản không tồn tại hoặc bạn không có quyền truy cập."));
+
+    if (!workspaceId.equals(account.getWorkspace().getId())) {
+        throw new AccessDeniedException(
+                "Tài khoản không tồn tại hoặc bạn không có quyền truy cập.");
+    }
+
+    return account;
+}
+
+@Transactional(readOnly = true)
+public AccountUpdateRequest getAccountUpdateRequest(Long accountId) {
+    Account account = getAccountForEditing(accountId);
+
+    AccountUpdateRequest request = new AccountUpdateRequest();
+    request.setName(account.getName());
+    request.setType(account.getType());
+
+    return request;
+}
+
+@Transactional
+public void updateAccount(Long accountId, AccountUpdateRequest request) {
+    Account account = getAccountForEditing(accountId);
+
+    Set<ConstraintViolation<AccountUpdateRequest>> errors =
+            validator.validate(request);
+
+    if (!errors.isEmpty()) {
+        throw new IllegalArgumentException(
+                errors.iterator().next().getMessage());
+    }
+
+    if (request.getType() != AccountType.CASH
+            && request.getType() != AccountType.BANK) {
+        throw new IllegalArgumentException(
+                "Hiện chỉ hỗ trợ tài khoản tiền mặt và ngân hàng.");
+    }
+
+    account.setName(request.getName().strip());
+    account.setType(request.getType());
+
+    accountRepository.save(account);
+}
 }

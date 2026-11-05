@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Sửa tài khoản tiền', 'accounts', ~{::#main-content}, ~{}, ~{})}">
+<body>
+    <div id="main-content">
+        <h2 class="fw-bold mb-3">Sửa thông tin tài khoản</h2>
+
+        <div class="card shadow-sm border-0 p-4">
+            <form th:action="@{/accounts/{id}/edit(id=${accountId})}"
+                  th:object="${accountUpdateRequest}"
+                  method="post">
+
+                <div th:if="${#fields.hasGlobalErrors()}"
+                     class="alert alert-danger">
+                    <p th:each="error : ${#fields.globalErrors()}"
+                       th:text="${error}"
+                       class="mb-0"></p>
+                </div>
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">
+                        Tên tài khoản
+                    </label>
+                    <input id="name"
+                           type="text"
+                           th:field="*{name}"
+                           class="form-control"
+                           maxlength="100"
+                           required>
+                    <div th:errors="*{name}"
+                         class="text-danger small mt-1"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="type" class="form-label">
+                        Loại tài khoản
+                    </label>
+                    <select id="type"
+                            th:field="*{type}"
+                            class="form-select"
+                            required>
+                        <option value="">-- Chọn loại --</option>
+                        <option value="CASH">Tiền mặt</option>
+                        <option value="BANK">Ngân hàng</option>
+                    </select>
+                    <div th:errors="*{type}"
+                         class="text-danger small mt-1"></div>
+                </div>
+
+                <p class="text-muted small">
+                    Thay đổi thông tin tài khoản không làm thay đổi số dư.
+                </p>
+
+                <button type="submit" class="btn btn-primary">
+                    Lưu thay đổi
+                </button>
+
+                <a th:href="@{/accounts}"
+                   class="btn btn-outline-secondary ms-2">
+                    Hủy
+                </a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
