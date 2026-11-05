@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.smartenvelope.dto.account.AccountRequest;
@@ -27,11 +28,18 @@ public class AccountController {
     }
 
     @GetMapping
-    public String list(Model model) {
+    public String list(
+            @RequestParam(name = "archived", defaultValue = "false") boolean archived,
+            Model model) {
+
         model.addAttribute(
                 "accounts",
-                accountService.getAccountsForCurrentWorkspace()
+                archived
+                        ? accountService.getInactiveAccountsForCurrentWorkspace()
+                        : accountService.getAccountsForCurrentWorkspace()
         );
+
+        model.addAttribute("archived", archived);
 
         return "account/list";
     }
@@ -109,5 +117,35 @@ public class AccountController {
         );
 
         return "redirect:/accounts";
+    }
+
+    @PostMapping("/{id}/deactivate")
+    public String deactivate(
+            @PathVariable("id") Long id,
+            RedirectAttributes redirectAttributes) {
+
+        accountService.deactivateAccount(id);
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "Đã ngừng sử dụng tài khoản. Dữ liệu và số dư vẫn được giữ nguyên."
+        );
+
+        return "redirect:/accounts";
+    }
+
+    @PostMapping("/{id}/reactivate")
+    public String reactivate(
+            @PathVariable("id") Long id,
+            RedirectAttributes redirectAttributes) {
+
+        accountService.reactivateAccount(id);
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "Đã khôi phục tài khoản."
+        );
+
+        return "redirect:/accounts?archived=true";
     }
 }

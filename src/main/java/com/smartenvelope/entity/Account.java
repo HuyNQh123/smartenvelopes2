@@ -1,16 +1,30 @@
 package com.smartenvelope.entity;
 
-import com.smartenvelope.enums.AccountType;
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.smartenvelope.enums.AccountType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
 /**
  * Entity đại diện cho tài khoản tài chính (ngân hàng, tiền mặt, thẻ tín dụng,
- * tiết kiệm).
- * Lưu giữ số dư thực tế theo đơn vị VND (BigDecimal scale 0) và hỗ trợ
- * Optimistic Locking qua trường version.
- * Phụ trách bởi: Thành viên 2 (Account & Category Management).
+ * tiết kiệm). Lưu giữ số dư thực tế theo đơn vị VND (BigDecimal scale 0) và hỗ
+ * trợ Optimistic Locking qua trường version. Phụ trách bởi: Thành viên 2
+ * (Account & Category Management).
  */
 @Entity
 @Table(name = "accounts")
@@ -36,6 +50,9 @@ public class Account {
 
     @Column(name = "currency", nullable = false, length = 10)
     private String currency = "VND";
+
+    @Column(name = "is_active", nullable = false)
+    private boolean active = true;
 
     @Column(name = "account_number", length = 50)
     private String accountNumber;
@@ -170,5 +187,13 @@ public class Account {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

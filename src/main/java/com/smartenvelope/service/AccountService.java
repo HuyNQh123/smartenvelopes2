@@ -39,7 +39,8 @@ public class AccountService {
     public List<Account> getAccountsForCurrentWorkspace() {
         Long workspaceId = workspaceContextService.getCurrentWorkspaceId();
 
-        return accountRepository.findByWorkspaceId(workspaceId);
+        return accountRepository.findByWorkspaceIdAndActive(
+                workspaceId, true);
     }
 
     @Transactional
@@ -48,16 +49,16 @@ public class AccountService {
 
         MemberRole role = workspaceContextService
                 .getCurrentUserRoleInWorkspace(workspace.getId())
-                .orElseThrow(() ->
-                        new AccessDeniedException("Bạn không có quyền truy cập quỹ."));
+                .orElseThrow(()
+                        -> new AccessDeniedException("Bạn không có quyền truy cập quỹ."));
 
         if (role != MemberRole.OWNER && role != MemberRole.MANAGER) {
             throw new AccessDeniedException(
                     "Chỉ chủ quỹ hoặc người quản lý được thêm tài khoản tiền.");
         }
 
-        Set<ConstraintViolation<AccountRequest>> errors =
-                validator.validate(request);
+        Set<ConstraintViolation<AccountRequest>> errors
+                = validator.validate(request);
 
         if (!errors.isEmpty()) {
             throw new IllegalArgumentException(
@@ -80,64 +81,89 @@ public class AccountService {
 
         accountRepository.save(account);
     }
+
     private Account getAccountForEditing(Long accountId) {
-    Long workspaceId = workspaceContextService.getCurrentWorkspaceId();
+        Long workspaceId = workspaceContextService.getCurrentWorkspaceId();
 
-    MemberRole role = workspaceContextService
-            .getCurrentUserRoleInWorkspace(workspaceId)
-            .orElseThrow(() ->
-                    new AccessDeniedException("Bạn không có quyền truy cập quỹ."));
+        MemberRole role = workspaceContextService
+                .getCurrentUserRoleInWorkspace(workspaceId)
+                .orElseThrow(()
+                        -> new AccessDeniedException("Bạn không có quyền truy cập quỹ."));
 
-    if (role != MemberRole.OWNER && role != MemberRole.MANAGER) {
-        throw new AccessDeniedException(
-                "Chỉ chủ quỹ hoặc người quản lý được sửa tài khoản tiền.");
+        if (role != MemberRole.OWNER && role != MemberRole.MANAGER) {
+            throw new AccessDeniedException(
+                    "Chỉ chủ quỹ hoặc người quản lý được sửa tài khoản tiền.");
+        }
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(()
+                        -> new AccessDeniedException(
+                                "Tài khoản không tồn tại hoặc bạn không có quyền truy cập."));
+
+        if (!workspaceId.equals(account.getWorkspace().getId())) {
+            throw new AccessDeniedException(
+                    "Tài khoản không tồn tại hoặc bạn không có quyền truy cập.");
+        }
+
+        return account;
     }
 
-    Account account = accountRepository.findById(accountId)
-            .orElseThrow(() ->
-                    new AccessDeniedException(
-                            "Tài khoản không tồn tại hoặc bạn không có quyền truy cập."));
+    @Transactional(readOnly = true)
+    public AccountUpdateRequest getAccountUpdateRequest(Long accountId) {
+        Account account = getAccountForEditing(accountId);
 
-    if (!workspaceId.equals(account.getWorkspace().getId())) {
-        throw new AccessDeniedException(
-                "Tài khoản không tồn tại hoặc bạn không có quyền truy cập.");
+        AccountUpdateRequest request = new AccountUpdateRequest();
+        request.setName(account.getName());
+        request.setType(account.getType());
+
+        return request;
     }
 
-    return account;
-}
+    @Transactional
+    public void updateAccount(Long accountId, AccountUpdateRequest request) {
+        Account account = getAccountForEditing(accountId);
 
-@Transactional(readOnly = true)
-public AccountUpdateRequest getAccountUpdateRequest(Long accountId) {
-    Account account = getAccountForEditing(accountId);
+        Set<ConstraintViolation<AccountUpdateRequest>> errors
+                = validator.validate(request);
 
-    AccountUpdateRequest request = new AccountUpdateRequest();
-    request.setName(account.getName());
-    request.setType(account.getType());
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(
+                    errors.iterator().next().getMessage());
+        }
 
-    return request;
-}
+        if (request.getType() != AccountType.CASH
+                && request.getType() != AccountType.BANK) {
+            throw new IllegalArgumentException(
+                    "Hiện chỉ hỗ trợ tài khoản tiền mặt và ngân hàng.");
+        }
 
-@Transactional
-public void updateAccount(Long accountId, AccountUpdateRequest request) {
-    Account account = getAccountForEditing(accountId);
+        account.setName(request.getName().strip());
+        account.setType(request.getType());
 
-    Set<ConstraintViolation<AccountUpdateRequest>> errors =
-            validator.validate(request);
-
-    if (!errors.isEmpty()) {
-        throw new IllegalArgumentException(
-                errors.iterator().next().getMessage());
+        accountRepository.save(account);
     }
 
-    if (request.getType() != AccountType.CASH
-            && request.getType() != AccountType.BANK) {
-        throw new IllegalArgumentException(
-                "Hiện chỉ hỗ trợ tài khoản tiền mặt và ngân hàng.");
+    @Transactional(readOnly = true)
+    public List<Account> getInactiveAccountsForCurrentWorkspace() {
+        Long workspaceId = workspaceContextService.getCurrentWorkspaceId();
+
+        return accountRepository.findByWorkspaceIdAndActive(
+                workspaceId, false);
     }
 
-    account.setName(request.getName().strip());
-    account.setType(request.getType());
+    @Transactional
+    public void deactivateAccount(Long accountId) {
+        Account account = getAccountForEditing(accountId);
 
-    accountRepository.save(account);
-}
+        account.setActive(false);
+        accountRepository.save(account);
+    }
+
+    @Transactional
+    public void reactivateAccount(Long accountId) {
+        Account account = getAccountForEditing(accountId);
+
+        account.setActive(true);
+        accountRepository.save(account);
+    }
 }

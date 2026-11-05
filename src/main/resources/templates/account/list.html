@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/main :: layout('Tài khoản tiền', 'accounts', ~{::#main-content}, ~{}, ~{})}">
+    th:replace="~{layouts/main :: layout('Tài khoản tiền', 'accounts', ~{::#main-content}, ~{}, ~{})}">
+
 <body>
     <div id="main-content">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -15,16 +16,26 @@
         <p class="text-muted">
             Quản lý các tài khoản tiền thuộc quỹ đang chọn.
         </p>
+        <div class="d-flex gap-2 mb-3">
+            <a th:href="@{/accounts}" class="btn btn-sm"
+                th:classappend="${archived ? 'btn-outline-primary' : 'btn-primary'}">
+                Đang sử dụng
+            </a>
 
-        <div th:if="${#lists.isEmpty(accounts)}"
-             class="card shadow-sm border-0 p-4 mt-3">
-            <p class="text-muted mb-0">
-                Quỹ này chưa có tài khoản tiền nào.
+            <a th:href="@{/accounts(archived=true)}" class="btn btn-sm"
+                th:classappend="${archived ? 'btn-primary' : 'btn-outline-primary'}">
+                Đã ngừng sử dụng
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(accounts)}" class="card shadow-sm border-0 p-4 mt-3">
+            <p class="text-muted mb-0" th:text="${archived
+       ? 'Chưa có tài khoản nào ngừng sử dụng.'
+       : 'Chưa có tài khoản đang sử dụng.'}">
             </p>
         </div>
 
-        <div th:unless="${#lists.isEmpty(accounts)}"
-             class="card shadow-sm border-0 p-3 mt-3">
+        <div th:unless="${#lists.isEmpty(accounts)}" class="card shadow-sm border-0 p-3 mt-3">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead>
@@ -45,10 +56,31 @@
                             </td>
                             <td th:text="${account.currency}"></td>
                             <td>
-                                <a th:href="@{/accounts/{id}/edit(id=${account.id})}"
-                                class="btn btn-sm btn-outline-primary">
-                                    Sửa
-                                </a>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a th:if="${account.active}" th:href="@{/accounts/{id}/edit(id=${account.id})}"
+                                        class="btn btn-sm btn-outline-primary">
+                                        Sửa
+                                    </a>
+
+                                    <form th:if="${account.active}"
+                                        th:action="@{/accounts/{id}/deactivate(id=${account.id})}" method="post"
+                                        class="m-0"
+                                        onsubmit="return confirm('Ngừng sử dụng tài khoản này? Dữ liệu và số dư vẫn được giữ nguyên.');">
+
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            Ngừng sử dụng
+                                        </button>
+                                    </form>
+
+                                    <form th:unless="${account.active}"
+                                        th:action="@{/accounts/{id}/reactivate(id=${account.id})}" method="post"
+                                        class="m-0">
+
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            Khôi phục
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -57,4 +89,5 @@
         </div>
     </div>
 </body>
+
 </html>

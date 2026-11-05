@@ -1,11 +1,12 @@
 package com.smartenvelope.repository;
 
-import com.smartenvelope.entity.Account;
-import com.smartenvelope.enums.AccountType;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.smartenvelope.entity.Account;
+import com.smartenvelope.enums.AccountType;
 
 /**
  * Repository thao tác dữ liệu với bảng accounts.
@@ -17,4 +18,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     List<Account> findByWorkspaceId(Long workspaceId);
 
     List<Account> findByWorkspaceIdAndType(Long workspaceId, AccountType type);
+    
+    List<Account> findByWorkspaceIdAndActive(
+        Long workspaceId,
+        boolean active);
 }
