@@ -1,26 +1,82 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Kế hoạch ngân sách (Phụ trách bởi: Thành viên 4) -->
-<head th:replace="~{fragments/header :: header('Kế hoạch ngân sách')}">
-</head>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Kỳ ngân sách', 'budgets', ~{::#main-content}, ~{}, ~{})}">
 <body>
-<div class="d-flex">
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
-    <main class="flex-grow-1 p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Kế Hoạch Ngân Sách</h2>
-            <a th:href="@{/budgets/new}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Thiết Lập Ngân Sách
-            </a>
+<div id="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0">Kỳ ngân sách</h2>
+
+        <a th:href="@{/budgets/new}" class="btn btn-primary">
+            Tạo kỳ ngân sách
+        </a>
+    </div>
+
+    <p class="text-muted">
+        Các kỳ ngân sách thuộc quỹ đang chọn, sắp xếp từ mới đến cũ.
+    </p>
+
+    <div th:if="${#lists.isEmpty(periods)}"
+         class="card shadow-sm border-0 p-4">
+        <p class="text-muted mb-0">
+            Quỹ này chưa có kỳ ngân sách.
+        </p>
+    </div>
+
+    <div th:unless="${#lists.isEmpty(periods)}"
+         class="card shadow-sm border-0 p-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Tên kỳ</th>
+                    <th>Bắt đầu</th>
+                    <th>Kết thúc</th>
+                    <th class="text-end">Thu nhập đã ghi nhận</th>
+                    <th class="text-end">Đã phân bổ</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="period : ${periods}">
+                    <td th:text="${period.name}"></td>
+
+                    <td th:text="${#temporals.format(period.startDate, 'dd/MM/yyyy')}">
+                    </td>
+
+                    <td th:text="${#temporals.format(period.endDate, 'dd/MM/yyyy')}">
+                    </td>
+
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(period.totalIncome, 1, 'POINT', 0, 'COMMA')}">
+                    </td>
+
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(period.totalAllocated, 1, 'POINT', 0, 'COMMA')}">
+                    </td>
+
+                    <td th:switch="${period.status.name()}">
+                        <span th:case="'DRAFT'"
+                              class="badge bg-secondary">
+                            Nháp
+                        </span>
+                        <span th:case="'CONFIRMED'"
+                              class="badge bg-success">
+                            Đã xác nhận
+                        </span>
+                        <span th:case="'CLOSED'"
+                              class="badge bg-dark">
+                            Đã đóng
+                        </span>
+                        <span th:case="*"
+                              th:text="${period.status}">
+                        </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
-        <p class="text-muted">Áp dụng các quy tắc ngân sách thông minh (ví dụ: Quy tắc 50/30/20).</p>
-        <!-- TODO: Thành viên 4 hiển thị danh sách quy tắc và hạn mức tổng -->
-        <div class="card shadow-sm border-0 p-4 mt-3">
-            <p class="text-muted mb-0">Chưa có kế hoạch ngân sách nào được thiết lập.</p>
-        </div>
-    </main>
+    </div>
 </div>
-<div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
-
