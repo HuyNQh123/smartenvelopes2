@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Lịch sử giao dịch thu/chi (Phụ trách bởi: Thành viên 3) -->
+<!-- Giao diện Lịch sử giao dịch thu/chi (Phụ trách bởi: Thành viên 3 - Quang) -->
 <head th:replace="~{fragments/header :: header('Lịch sử giao dịch')}">
 </head>
 <body>
@@ -8,35 +8,116 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
     <main class="flex-grow-1 p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Lịch Sử Giao Dịch</h2>
+            <h2><i class="bi bi-clock-history me-2"></i>Lịch Sử Giao Dịch</h2>
             <a th:href="@{/transactions/new}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i> Ghi Giao Dịch Mới
             </a>
         </div>
-        <p class="text-muted">Theo dõi và lọc danh sách thu, chi và chuyển tiền.</p>
-        <!-- TODO: Thành viên 3 hiển thị bảng giao dịch có phân trang và bộ lọc -->
+        <p class="text-muted">Theo dõi và quản lý các giao dịch thu, chi và điều chuyển phong bì ngân sách.</p>
+
+        <!-- Thông báo thành công nếu có -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span th:text="${successMessage}">Thao tác thành công</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <div class="card shadow-sm border-0 p-4 mt-3">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Ngày</th>
-                        <th>Loại</th>
-                        <th>Danh mục</th>
-                        <th>Tài khoản</th>
-                        <th>Số tiền</th>
-                        <th>Ghi chú</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">Chưa có giao dịch nào được ghi nhận.</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Loại</th>
+                            <th>Danh mục</th>
+                            <th>Tài khoản</th>
+                            <th>Số tiền</th>
+                            <th>Ghi chú</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Trường hợp chưa có giao dịch nào -->
+                        <tr th:if="${#lists.isEmpty(transactions)}">
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                Chưa có giao dịch nào được ghi nhận.
+                            </td>
+                        </tr>
+
+                        <!-- Nối biến ${transactions} bằng th:each='tx : ${transactions}' -->
+                        <tr th:each="tx : ${transactions}">
+                            <!-- 1. Ngày giao dịch -->
+                            <td th:text="${#temporals.format(tx.transactionDate, 'dd/MM/yyyy HH:mm')}">01/01/2026 12:00</td>
+
+                            <!-- 2. Loại: badge xanh cho INCOME, đỏ cho EXPENSE -->
+                            <td>
+                                <span th:if="${tx.type.name() == 'INCOME'}" class="badge bg-success">
+                                    <i class="bi bi-arrow-down-left me-1"></i>Thu nhập
+                                </span>
+                                <span th:if="${tx.type.name() == 'EXPENSE'}" class="badge bg-danger">
+                                    <i class="bi bi-arrow-up-right me-1"></i>Chi tiêu
+                                </span>
+                                <span th:if="${tx.type.name() == 'TRANSFER'}" class="badge bg-info text-dark">
+                                    <i class="bi bi-arrow-left-right me-1"></i>Chuyển tiền
+                                </span>
+                            </td>
+
+                            <!-- 3. Danh mục -->
+                            <td>
+                                <span th:if="${tx.category != null}" class="fw-semibold" th:text="${tx.category.name}">Ăn uống</span>
+                                <span th:if="${tx.envelope != null}" class="badge bg-secondary ms-1" th:text="${tx.envelope.name}">PB Ăn uống</span>
+                                <span th:if="${tx.category == null and tx.envelope == null}" class="text-muted">-</span>
+                            </td>
+
+                            <!-- 4. Tài khoản thanh toán -->
+                            <td th:text="${tx.account != null ? tx.account.name : '-'}">Ví tiền mặt</td>
+
+                            <!-- 5. Số tiền -->
+                            <td class="fw-bold"
+                                th:classappend="${tx.type.name() == 'INCOME' ? 'text-success' : (tx.type.name() == 'EXPENSE' ? 'text-danger' : 'text-primary')}"
+                                th:text="(${tx.type.name() == 'INCOME' ? '+' : (tx.type.name() == 'EXPENSE' ? '-' : '')}) + ${#numbers.formatDecimal(tx.amount, 0, 'COMMA', 0, 'POINT')} + ' đ'">
+                                -50.000 đ
+                            </td>
+
+                            <!-- 6. Ghi chú -->
+                            <td class="text-muted" th:text="${tx.note}">Bữa trưa</td>
+
+                            <!-- 7. Nút Hủy giao dịch -->
+                            <td class="text-center">
+                                <form th:action="@{/transactions/{id}/cancel(id=${tx.id})}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn hủy giao dịch này và hoàn trả lại số dư không?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Hủy giao dịch">
+                                        <i class="bi bi-trash3 me-1"></i>Hủy
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Thanh phân trang (Pagination) -->
+            <nav th:if="${totalPages != null and totalPages > 1}" class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                <span class="text-muted small">
+                    Hiển thị trang <b th:text="${currentPage + 1}">1</b> / <span th:text="${totalPages}">1</span> (Tổng cộng <span th:text="${totalItems}">0</span> giao dịch)
+                </span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link" th:href="@{/transactions(page=${currentPage - 1})}">&laquo; Trước</a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" th:href="@{/transactions(page=${i})}" th:text="${i + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
+                        <a class="page-link" th:href="@{/transactions(page=${currentPage + 1})}">Sau &raquo;</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </main>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
 </body>
 </html>
-
