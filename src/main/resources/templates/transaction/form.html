@@ -1,51 +1,276 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Ghi nhận giao dịch mới (Phụ trách bởi: Thành viên 3) -->
-<head th:replace="~{fragments/header :: header('Giao dịch mới')}">
+<!-- Giao diện Ghi nhận giao dịch mới & Lõi Bù chi vượt Cover Engine (Phụ trách bởi: Thành viên 3 - Quang) -->
+<head th:replace="~{fragments/header :: header('Ghi nhận giao dịch')}">
 </head>
 <body>
 <div class="d-flex">
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
     <main class="flex-grow-1 p-4">
-        <h2>Ghi Nhận Giao Dịch</h2>
-        <!-- TODO: Thành viên 3 thiết kế form nhập số tiền, chọn loại giao dịch, tài khoản và phong bì -->
-        <div class="card shadow-sm border-0 p-4 mt-3" style="max-width: 600px;">
-            <form>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-wallet2 me-2"></i>Ghi Nhận Giao Dịch Tài Chính</h2>
+            <a th:href="@{/transactions}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại danh sách
+            </a>
+        </div>
+
+        <!-- Thông báo lỗi nghiệp vụ nếu có -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="card shadow-sm border-0 p-4" style="max-width: 650px;">
+            <form th:action="@{/transactions}" th:object="${transactionRequest}" method="post" id="transactionForm">
+                <!-- Trường ẩn lưu ID phong bì bù chi vượt được chọn từ Modal -->
+                <input type="hidden" th:field="*{coverEnvelopeId}" id="coverEnvelopeId" />
+
+                <!-- 1. Loại giao dịch -->
                 <div class="mb-3">
-                    <label class="form-label">Loại giao dịch</label>
-                    <select class="form-select">
-                        <option value="EXPENSE">Chi tiêu</option>
-                        <option value="INCOME">Thu nhập</option>
-                        <option value="TRANSFER">Chuyển tiền</option>
+                    <label class="form-label fw-bold">Loại giao dịch <span class="text-danger">*</span></label>
+                    <select class="form-select" th:field="*{type}" id="transactionType" required>
+                        <option value="EXPENSE">Chi tiêu (Khấu trừ phong bì)</option>
+                        <option value="INCOME">Thu nhập (Cộng tài khoản)</option>
+                        <option value="TRANSFER">Điều chuyển phong bì</option>
                     </select>
                 </div>
+
+                <!-- 2. Số tiền giao dịch -->
                 <div class="mb-3">
-                    <label class="form-label">Số tiền (VNĐ)</label>
-                    <input type="number" class="form-control" placeholder="0">
+                    <label class="form-label fw-bold">Số tiền (VNĐ) <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" th:field="*{amount}" id="amount"
+                               placeholder="Ví dụ: 150000" min="1" step="any" required>
+                        <span class="input-group-text">VNĐ</span>
+                    </div>
                 </div>
+
+                <!-- 3. Tài khoản thanh toán thực tế -->
                 <div class="mb-3">
-                    <label class="form-label">Tài khoản thanh toán</label>
-                    <select class="form-select">
-                        <option value="">-- Chọn tài khoản --</option>
+                    <label class="form-label fw-bold">Tài khoản thanh toán thực tế <span class="text-danger">*</span></label>
+                    <select class="form-select" th:field="*{accountId}" id="accountId" required>
+                        <option value="">-- Chọn tài khoản thanh toán --</option>
+                        <option th:each="acc : ${accounts}"
+                                th:value="${acc.id}"
+                                th:text="${acc.name} + ' (Số dư: ' + ${#numbers.formatDecimal(acc.balance, 0, 'COMMA', 0, 'POINT')} + ' đ)'"
+                                th:data-balance="${acc.balance}">
+                        </option>
+                    </select>
+                    <small class="text-muted">Khoản tiền thực tế sẽ được trừ từ tài khoản này.</small>
+                </div>
+
+                <!-- 4. Phong bì ngân sách khấu trừ -->
+                <div class="mb-3" id="envelopeSection">
+                    <label class="form-label fw-bold">Phong bì ngân sách khấu trừ <span class="text-danger">*</span></label>
+                    <select class="form-select" th:field="*{envelopeId}" id="envelopeId">
+                        <option value="">-- Chọn phong bì ngân sách --</option>
+                        <option th:each="env : ${envelopes}"
+                                th:value="${env.id}"
+                                th:text="${env.name} + ' (Khả dụng: ' + ${#numbers.formatDecimal(env.balance, 0, 'COMMA', 0, 'POINT')} + ' đ' + (${env.locked} ? ' - ĐÃ KHÓA' : '') + ')'"
+                                th:data-name="${env.name}"
+                                th:data-balance="${env.balance}"
+                                th:data-locked="${env.locked}">
+                        </option>
                     </select>
                 </div>
+
+                <!-- 5. Danh mục chi tiêu -->
                 <div class="mb-3">
-                    <label class="form-label">Phong bì khấu trừ</label>
-                    <select class="form-select">
-                        <option value="">-- Chọn phong bì --</option>
+                    <label class="form-label fw-bold">Danh mục</label>
+                    <select class="form-select" th:field="*{categoryId}" id="categoryId">
+                        <option value="">-- Chọn danh mục (Tùy chọn) --</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.id}"
+                                th:text="${cat.name}">
+                        </option>
                     </select>
                 </div>
+
+                <!-- 6. Ghi chú -->
                 <div class="mb-3">
-                    <label class="form-label">Ghi chú</label>
-                    <textarea class="form-control" rows="2" placeholder="Nội dung chi tiêu..."></textarea>
+                    <label class="form-label fw-bold">Ghi chú giao dịch</label>
+                    <textarea class="form-control" th:field="*{note}" id="note" rows="2"
+                              placeholder="Nhập nội dung chi tiêu hoặc lý do..."></textarea>
                 </div>
-                <button type="button" class="btn btn-primary">Lưu Giao Dịch</button>
-                <a th:href="@{/transactions}" class="btn btn-secondary ms-2">Hủy</a>
+
+                <!-- Nút thao tác -->
+                <div class="d-flex align-items-center mt-4">
+                    <button type="submit" class="btn btn-primary px-4" id="btnSubmitTransaction">
+                        <i class="bi bi-check-circle me-1"></i> Lưu Giao Dịch
+                    </button>
+                    <a th:href="@{/transactions}" class="btn btn-light ms-2 border">Hủy</a>
+                </div>
             </form>
         </div>
     </main>
 </div>
+
+<!-- ========================================================== -->
+<!-- MODAL BOOTSTRAP: YÊU CẦU CHỌN NGUỒN BÙ CHI VƯỢT (COVER ENGINE) -->
+<!-- ========================================================== -->
+<div class="modal fade" id="coverEngineModal" tabindex="-1" aria-labelledby="coverEngineModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning bg-opacity-25 border-bottom border-warning">
+                <h5 class="modal-title fw-bold text-dark" id="coverEngineModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Chi Vượt Ngân Sách - Chọn Nguồn Bù
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-warning mb-3">
+                    <p class="mb-1">Khoản chi dự định: <strong id="modalExpenseAmount" class="text-danger">0 đ</strong></p>
+                    <p class="mb-1">Số dư phong bì đích (<span id="modalTargetEnvelopeName" class="fw-bold">...</span>): <strong id="modalTargetBalance" class="text-secondary">0 đ</strong></p>
+                    <hr class="my-2">
+                    <p class="mb-0 fs-6">Thiếu hụt: <strong id="modalDeficitAmount" class="text-danger fs-5">0 đ</strong>. Bắt buộc phải chọn một phong bì khác để bù khoản thiếu này!</p>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold" for="modalCoverSelect">Chọn phong bì nguồn để bù tiền <span class="text-danger">*</span></label>
+                    <select class="form-select" id="modalCoverSelect">
+                        <option value="">-- Chọn phong bì bù --</option>
+                    </select>
+                    <div id="modalCoverError" class="text-danger small mt-1 d-none"></div>
+                </div>
+
+                <div class="bg-light p-2 rounded small text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <em>Hệ thống sẽ thực hiện điều chuyển bù thiếu (COVER_EXPENSE) giữa 2 phong bì và trừ tiền thanh toán cùng lúc theo cơ chế nguyên tử.</em>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmCover">
+                    <i class="bi bi-arrow-repeat me-1"></i> Xác Nhận Bù & Chi Tiền
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- JavaScript: Chặn form và hiển thị Modal khi phong bì không đủ tiền -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const transactionForm = document.getElementById('transactionForm');
+    const typeSelect = document.getElementById('transactionType');
+    const amountInput = document.getElementById('amount');
+    const envelopeSelect = document.getElementById('envelopeId');
+    const coverEnvelopeHidden = document.getElementById('coverEnvelopeId');
+
+    const coverModalElement = document.getElementById('coverEngineModal');
+    const coverModal = new bootstrap.Modal(coverModalElement);
+    const modalCoverSelect = document.getElementById('modalCoverSelect');
+    const btnConfirmCover = document.getElementById('btnConfirmCover');
+    const modalCoverError = document.getElementById('modalCoverError');
+
+    // Reset coverEnvelopeId nếu người dùng thay đổi số tiền hoặc phong bì đích
+    amountInput.addEventListener('input', () => { coverEnvelopeHidden.value = ''; });
+    envelopeSelect.addEventListener('change', () => { coverEnvelopeHidden.value = ''; });
+    typeSelect.addEventListener('change', () => { coverEnvelopeHidden.value = ''; });
+
+    // Định dạng tiền tệ VNĐ
+    function formatVND(num) {
+        return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
+    }
+
+    // Xử lý sự kiện Submit Form
+    transactionForm.addEventListener('submit', function (event) {
+        const transType = typeSelect.value;
+        const amount = parseFloat(amountInput.value) || 0;
+        const selectedEnvOption = envelopeSelect.options[envelopeSelect.selectedIndex];
+
+        // Chỉ kiểm tra bù tiền đối với giao dịch Chi tiêu (EXPENSE) có chọn phong bì
+        if (transType === 'EXPENSE' && selectedEnvOption && selectedEnvOption.value !== "") {
+            const envelopeBalance = parseFloat(selectedEnvOption.getAttribute('data-balance')) || 0;
+            const targetEnvelopeName = selectedEnvOption.getAttribute('data-name') || selectedEnvOption.text;
+
+            // Nếu khoản chi lớn hơn số dư phong bì và người dùng chưa xác nhận nguồn bù
+            if (amount > envelopeBalance && !coverEnvelopeHidden.value) {
+                // 1. Chặn submit lại
+                event.preventDefault();
+
+                const deficit = amount - envelopeBalance;
+
+                // 2. Điền thông tin thiếu hụt vào Modal
+                document.getElementById('modalExpenseAmount').innerText = formatVND(amount);
+                document.getElementById('modalTargetEnvelopeName').innerText = targetEnvelopeName;
+                document.getElementById('modalTargetBalance').innerText = formatVND(envelopeBalance);
+                document.getElementById('modalDeficitAmount').innerText = formatVND(deficit);
+
+                // 3. Tải danh sách các phong bì có thể dùng để bù (loại trừ chính phong bì đích)
+                modalCoverSelect.innerHTML = '<option value="">-- Chọn phong bì bù --</option>';
+                modalCoverError.classList.add('d-none');
+                modalCoverError.innerText = '';
+
+                let hasEligibleSource = false;
+
+                for (let i = 0; i < envelopeSelect.options.length; i++) {
+                    const opt = envelopeSelect.options[i];
+                    if (!opt.value || opt.value === selectedEnvOption.value) continue;
+
+                    const optBalance = parseFloat(opt.getAttribute('data-balance')) || 0;
+                    const isLocked = opt.getAttribute('data-locked') === 'true';
+                    const optName = opt.getAttribute('data-name') || opt.text;
+
+                    const newOption = document.createElement('option');
+                    newOption.value = opt.value;
+                    newOption.setAttribute('data-balance', optBalance);
+                    newOption.setAttribute('data-locked', isLocked);
+
+                    if (isLocked) {
+                        newOption.disabled = true;
+                        newOption.innerText = `${optName} (Dư: ${formatVND(optBalance)} - [ĐÃ KHÓA BẢO VỆ])`;
+                    } else if (optBalance < deficit) {
+                        newOption.disabled = true;
+                        newOption.innerText = `${optName} (Dư: ${formatVND(optBalance)} - [KHÔNG ĐỦ TIỀN BÙ])`;
+                    } else {
+                        hasEligibleSource = true;
+                        newOption.innerText = `${optName} (Khả dụng: ${formatVND(optBalance)} - [HỢP LỆ])`;
+                    }
+
+                    modalCoverSelect.appendChild(newOption);
+                }
+
+                if (!hasEligibleSource) {
+                    modalCoverError.innerText = 'Cảnh báo: Không có phong bì nào khả dụng và đủ số dư để bù khoản thiếu hụt này!';
+                    modalCoverError.classList.remove('d-none');
+                }
+
+                // 4. Hiển thị Modal Bootstrap yêu cầu chọn nguồn bù
+                coverModal.show();
+            }
+        }
+    });
+
+    // Khi người dùng bấm "Xác Nhận Bù & Chi Tiền" trên Modal
+    btnConfirmCover.addEventListener('click', function () {
+        const chosenCoverId = modalCoverSelect.value;
+        if (!chosenCoverId) {
+            modalCoverError.innerText = 'Vui lòng chọn một phong bì nguồn hợp lệ để bù!';
+            modalCoverError.classList.remove('d-none');
+            return;
+        }
+
+        const selectedCoverOption = modalCoverSelect.options[modalCoverSelect.selectedIndex];
+        if (selectedCoverOption.disabled) {
+            modalCoverError.innerText = 'Phong bì này không hợp lệ hoặc không đủ số dư!';
+            modalCoverError.classList.remove('d-none');
+            return;
+        }
+
+        // Gán ID nguồn bù vào hidden input của form
+        coverEnvelopeHidden.value = chosenCoverId;
+
+        // Đóng modal
+        coverModal.hide();
+
+        // Submit form chính
+        transactionForm.submit();
+    });
+});
+</script>
 </body>
 </html>
-
