@@ -1,22 +1,39 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Kế hoạch ngân sách (Phụ trách bởi: Thành viên 4) -->
-<head th:replace="~{fragments/resources :: head('Kế hoạch ngân sách')}">
-</head>
+<head th:replace="~{fragments/resources :: head('Ngân sách')}"></head>
 <body>
 <div class="d-flex">
     <div th:replace="~{fragments/sidebar :: sidebar('budgets')}"></div>
     <main class="flex-grow-1 p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Kế Hoạch Ngân Sách</h2>
-            <a th:href="@{/budgets/new}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Thiết Lập Ngân Sách
-            </a>
+            <h2>Kế hoạch ngân sách</h2>
+            <a th:href="@{/budgets/new}" class="btn btn-primary">Tạo kỳ ngân sách</a>
         </div>
-        <p class="text-muted">Áp dụng các quy tắc ngân sách thông minh (ví dụ: Quy tắc 50/30/20).</p>
-        <!-- TODO: Thành viên 4 hiển thị danh sách quy tắc và hạn mức tổng -->
-        <div class="card shadow-sm border-0 p-4 mt-3">
-            <p class="text-muted mb-0">Chưa có kế hoạch ngân sách nào được thiết lập.</p>
+
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+        <div class="card shadow-sm border-0 p-4" th:if="${#lists.isEmpty(budgets)}">
+            <p class="text-muted mb-0">Chưa có kỳ ngân sách nào.</p>
+        </div>
+        <div class="table-responsive" th:unless="${#lists.isEmpty(budgets)}">
+            <table class="table align-middle">
+                <thead><tr><th>Kỳ</th><th>Thu nhập</th><th>Đã phân bổ</th><th>Còn lại</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="budget : ${budgets}">
+                    <td><strong th:text="${budget.name}"></strong><div class="small text-muted" th:text="${budget.month + '/' + budget.year}"></div></td>
+                    <td th:text="${#numbers.formatDecimal(budget.totalIncome, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                    <td th:text="${#numbers.formatDecimal(budget.totalAllocated, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                    <td th:text="${#numbers.formatDecimal(budget.remainingBudget, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                    <td><span class="badge text-bg-secondary" th:text="${budget.status}"></span></td>
+                    <td>
+                        <form th:if="${budget.status.name() == 'DRAFT'}" th:action="@{/budgets/{id}/confirm(id=${budget.id})}" method="post">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Xác nhận</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </main>
 </div>
@@ -24,4 +41,3 @@
 <th:block th:replace="~{fragments/resources :: scripts}"></th:block>
 </body>
 </html>
-

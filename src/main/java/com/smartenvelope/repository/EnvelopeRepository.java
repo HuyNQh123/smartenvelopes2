@@ -4,7 +4,6 @@ import com.smartenvelope.entity.Envelope;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +12,7 @@ import java.util.Optional;
  * Repository thao tác dữ liệu với bảng envelopes.
  * Phụ trách bởi: Thành viên 4 (Budget & Envelope Logic).
  */
-@Repository
+
 public interface EnvelopeRepository extends JpaRepository<Envelope, Long> {
 
     List<Envelope> findByBudgetPeriodId(Long budgetPeriodId);

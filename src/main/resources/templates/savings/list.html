@@ -1,22 +1,45 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Danh sách mục tiêu tiết kiệm và Heo đất (Phụ trách bởi: Thành viên 4) -->
-<head th:replace="~{fragments/resources :: head('Mục tiêu tiết kiệm')}">
-</head>
+<head th:replace="~{fragments/resources :: head('Tiết kiệm')}"></head>
 <body>
 <div class="d-flex">
     <div th:replace="~{fragments/sidebar :: sidebar('savings')}"></div>
     <main class="flex-grow-1 p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Mục Tiêu Tiết Kiệm & Heo Đất</h2>
-            <a th:href="@{/savings/new}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Tạo Mục Tiêu Mới
-            </a>
+            <h2>Mục tiêu tiết kiệm</h2>
+            <a th:href="@{/savings/new}" class="btn btn-primary">Tạo mục tiêu</a>
         </div>
-        <p class="text-muted">Theo dõi tiến độ tích lũy tiền cho các mục tiêu dài hạn.</p>
-        <!-- TODO: Thành viên 4 hiển thị danh sách mục tiêu tiết kiệm và thanh tiến độ hoàn thành -->
-        <div class="card shadow-sm border-0 p-4 mt-3">
-            <p class="text-muted mb-0">Chưa có mục tiêu tiết kiệm nào được tạo.</p>
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        <div class="card border-0 shadow-sm p-3 mb-4">
+            <span class="text-muted">Số dư heo đất</span>
+            <strong class="fs-4" th:text="${#numbers.formatDecimal(piggyBankBalance, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong>
+        </div>
+
+        <div th:if="${#lists.isEmpty(goals)}" class="card border-0 shadow-sm p-4">
+            <p class="text-muted mb-0">Chưa có mục tiêu tiết kiệm nào.</p>
+        </div>
+        <div class="row g-3" th:unless="${#lists.isEmpty(goals)}">
+            <div class="col-xl-6" th:each="goal : ${goals}">
+                <section class="card border-0 shadow-sm p-4 h-100">
+                    <div class="d-flex justify-content-between gap-3">
+                        <div>
+                            <h3 class="h5 mb-1" th:text="${goal.name}"></h3>
+                            <span class="small text-muted" th:text="${goal.status}"></span>
+                        </div>
+                        <span class="fw-semibold" th:text="${goal.progressPercent} + '%'"></span>
+                    </div>
+                    <div class="progress my-3" role="progressbar" th:attr="aria-valuenow=${goal.progressPercent}, aria-valuemin=0, aria-valuemax=100">
+                        <div class="progress-bar" th:style="|width: ${goal.progressPercent}%|"></div>
+                    </div>
+                    <p class="mb-1"><span th:text="${#numbers.formatDecimal(goal.currentAmount, 0, 'COMMA', 0, 'POINT')}"></span> / <span th:text="${#numbers.formatDecimal(goal.targetAmount, 0, 'COMMA', 0, 'POINT')}"></span> ₫</p>
+                    <p class="small text-muted" th:if="${goal.targetDate != null}" th:text="'Hạn dự kiến: ' + ${#temporals.format(goal.targetDate, 'dd/MM/yyyy')}"></p>
+                    <form th:if="${goal.status.name() == 'ACTIVE'}" th:action="@{/savings/{id}/deposit(id=${goal.id})}" method="post" class="input-group mt-auto">
+                        <input type="number" name="amount" min="1" step="1" class="form-control" placeholder="Số tiền nạp" required>
+                        <button class="btn btn-outline-primary" type="submit">Nạp tiền</button>
+                    </form>
+                </section>
+            </div>
         </div>
     </main>
 </div>
@@ -24,4 +47,3 @@
 <th:block th:replace="~{fragments/resources :: scripts}"></th:block>
 </body>
 </html>
-

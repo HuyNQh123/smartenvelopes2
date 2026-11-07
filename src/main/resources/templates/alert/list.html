@@ -1,17 +1,35 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<!-- Giao diện Danh sách cảnh báo và thông báo (Phụ trách bởi: Thành viên 4) -->
-<head th:replace="~{fragments/resources :: head('Cảnh báo & Thông báo')}">
-</head>
+<head th:replace="~{fragments/resources :: head('Cảnh báo và thông báo')}"></head>
 <body>
 <div class="d-flex">
     <div th:replace="~{fragments/sidebar :: sidebar('alerts')}"></div>
     <main class="flex-grow-1 p-4">
-        <h2>Cảnh Báo & Thông Báo</h2>
-        <p class="text-muted">Các cảnh báo vượt ngân sách, sắp cạn tiền phong bì hoặc nhắc nhở định kỳ.</p>
-        <!-- TODO: Thành viên 4 hiển thị danh sách cảnh báo với các badge mức độ (DANGER, WARNING, INFO) -->
-        <div class="card shadow-sm border-0 p-4 mt-3">
-            <p class="text-muted mb-0">Hiện tại bạn không có cảnh báo nào.</p>
+        <h2>Cảnh báo và thông báo</h2>
+        <p class="text-muted">Thông báo ngân sách và cập nhật gửi tới tài khoản của bạn.</p>
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+        <div th:if="${#lists.isEmpty(notifications)}" class="card border-0 shadow-sm p-4">
+            <p class="text-muted mb-0">Bạn chưa có thông báo nào.</p>
+        </div>
+        <div class="list-group" th:unless="${#lists.isEmpty(notifications)}">
+            <article class="list-group-item p-3" th:each="notification : ${notifications}">
+                <div class="d-flex justify-content-between gap-3">
+                    <div>
+                        <span class="badge me-2"
+                              th:classappend="${notification.type.name() == 'OVERSPENT'} ? 'text-bg-danger' : (${notification.type.name() == 'NEAR_LIMIT'} ? 'text-bg-warning' : 'text-bg-secondary')"
+                              th:text="${notification.type}"></span>
+                        <strong th:text="${notification.title}"></strong>
+                        <p class="mb-1 mt-2" th:text="${notification.message}"></p>
+                        <small class="text-muted" th:text="${#temporals.format(notification.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
+                    </div>
+                    <form th:if="${notification.status.name() != 'READ'}"
+                          th:action="@{/alerts/{id}/read(id=${notification.id})}" method="post">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">Đã đọc</button>
+                    </form>
+                    <span th:if="${notification.status.name() == 'READ'}" class="small text-muted">Đã đọc</span>
+                </div>
+            </article>
         </div>
     </main>
 </div>
@@ -19,4 +37,3 @@
 <th:block th:replace="~{fragments/resources :: scripts}"></th:block>
 </body>
 </html>
-
