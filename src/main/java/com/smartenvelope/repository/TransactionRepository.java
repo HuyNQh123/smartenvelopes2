@@ -12,8 +12,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Repository thao tác dữ liệu với bảng transactions.
- * Phụ trách bởi: Thành viên 3 (Transaction & Ledger Processing).
+ * Repository thao tác dữ liệu với bảng transactions. Phụ trách bởi: Thành viên
+ * 3 (Transaction & Ledger Processing).
  */
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
@@ -24,7 +24,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByEnvelopeId(Long envelopeId);
 
-    List<Transaction> findByWorkspaceIdAndTransactionDateBetween(Long workspaceId, LocalDate startDate, LocalDate endDate);
+    List<Transaction> findByWorkspaceIdAndTransactionDateBetween(Long workspaceId,
+            LocalDate startDate, LocalDate endDate);
 
     List<Transaction> findByWorkspaceIdAndType(Long workspaceId, TransactionType type);
 
@@ -33,5 +34,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     boolean existsByCategoryId(Long categoryId);
 
     @Query("SELECT t FROM Transaction t WHERE t.workspace.id = :workspaceId ORDER BY t.transactionDate DESC, t.id DESC")
-    List<Transaction> findRecentTransactions(@Param("workspaceId") Long workspaceId);
+    List<Transaction> findRecentTransactions(
+            @Param("workspaceId")
+            Long workspaceId);
 }

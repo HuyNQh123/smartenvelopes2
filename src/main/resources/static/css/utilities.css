@@ -1,0 +1,10 @@
+/* Opt-in: không suy đoán dữ liệu tiền từ vị trí cột hoặc loại input. */
+.money, .numeric { font-variant-numeric: tabular-nums lining-nums; }
+.money { text-align: right; white-space: nowrap; }
+.financial-summary { font-size: var(--font-summary); font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
+.page-title { font-size: var(--font-page-title); font-weight: 600; }
+.section-title { font-size: var(--font-section); font-weight: 600; }
+.helper-text { font-size: var(--font-helper); color: var(--color-text-secondary); }
+.table-actions { text-align: right; white-space: nowrap; }
+.empty-state { padding: var(--space-8) var(--space-4); text-align: center; color: var(--color-text-secondary); }
+.hover-primary:hover { color: var(--color-primary-hover); }

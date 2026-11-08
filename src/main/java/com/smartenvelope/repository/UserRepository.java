@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository thao tác dữ liệu với bảng users.
- * Phụ trách bởi: Thành viên 1 (Auth & User Management).
+ * Repository thao tác dữ liệu với bảng users. Phụ trách bởi: Thành viên 1 (Auth
+ * & User Management).
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -34,15 +34,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByRoleAndStatus(Role role, UserStatus status);
 
-    @Query("SELECT u FROM User u WHERE " +
-           "(:keyword IS NULL OR :keyword = '' OR " +
-           " LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           " LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           " LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
-           "(:role IS NULL OR u.role = :role) AND " +
-           "(:status IS NULL OR u.status = :status)")
-    Page<User> findBySearchFilter(@Param("keyword") String keyword,
-                                  @Param("role") Role role,
-                                  @Param("status") UserStatus status,
-                                  Pageable pageable);
+    @Query("SELECT u FROM User u WHERE " + "(:keyword IS NULL OR :keyword = '' OR "
+            + " LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR "
+            + " LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR "
+            + " LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND "
+            + "(:role IS NULL OR u.role = :role) AND " + "(:status IS NULL OR u.status = :status)")
+    Page<User> findBySearchFilter(
+            @Param("keyword")
+            String keyword,
+            @Param("role")
+            Role role,
+            @Param("status")
+            UserStatus status, Pageable pageable);
 }

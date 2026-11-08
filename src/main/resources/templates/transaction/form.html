@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <!-- Giao diện Ghi nhận giao dịch mới (Phụ trách bởi: Thành viên 3) -->
-<head th:replace="~{fragments/header :: header('Giao dịch mới')}">
+<head th:replace="~{fragments/resources :: head('Giao dịch mới')}">
 </head>
 <body>
 <div class="d-flex">
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar('transactions')}"></div>
     <main class="flex-grow-1 p-4">
         <h2>Ghi Nhận Giao Dịch</h2>
         <!-- TODO: Thành viên 3 thiết kế form nhập số tiền, chọn loại giao dịch, tài khoản và phong bì -->
@@ -46,6 +46,7 @@
     </main>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/resources :: scripts}"></th:block>
 </body>
 </html>
 

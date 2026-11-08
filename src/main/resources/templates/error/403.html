@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/resources :: head('Bạn không có quyền truy cập')}">
+    </head>
+    <body class="error-page">
+        <main class="error-container">
+            <a th:href="@{/login}" class="auth-brand">
+                SmartEnvelope
+            </a>
+            <p class="error-code">
+                403
+            </p>
+            <h1>
+                Bạn không có quyền truy cập
+            </h1>
+            <p class="text-muted">
+                Tài khoản hiện tại không được phép xem trang này. Hãy quay lại hoặc liên hệ người quản lý quỹ nếu bạn cần quyền truy cập.
+            </p>
+            <div class="page-actions">
+                <a th:href="@{/dashboard}" class="btn btn-primary">
+                    Về tổng quan
+                </a>
+                <a th:href="@{/login}" class="btn btn-outline-secondary">
+                    Đăng nhập
+                </a>
+            </div>
+        </main>
+    </body>
+</html>

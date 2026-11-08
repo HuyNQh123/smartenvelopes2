@@ -25,8 +25,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Service xử lý toàn bộ nghiệp vụ Quản lý Quỹ tài chính (Workspace) và Phân quyền Thành viên.
- * Phụ trách bởi: Thành viên 1.
+ * Service xử lý toàn bộ nghiệp vụ Quản lý Quỹ tài chính (Workspace) và Phân
+ * quyền Thành viên. Phụ trách bởi: Thành viên 1.
  */
 @Service
 @Transactional(readOnly = true)
@@ -39,9 +39,8 @@ public class WorkspaceService {
 
     @Autowired
     public WorkspaceService(WorkspaceRepository workspaceRepository,
-                            MembershipRepository membershipRepository,
-                            WorkspaceContextService workspaceContextService,
-                            AccountRepository accountRepository) {
+            MembershipRepository membershipRepository,
+            WorkspaceContextService workspaceContextService, AccountRepository accountRepository) {
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
         this.workspaceContextService = workspaceContextService;
@@ -49,7 +48,8 @@ public class WorkspaceService {
     }
 
     /**
-     * Lấy danh sách tóm tắt tất cả các Workspace mà người dùng đang tham gia (Membership ACCEPTED).
+     * Lấy danh sách tóm tắt tất cả các Workspace mà người dùng đang tham gia
+     * (Membership ACCEPTED).
      */
     public List<WorkspaceSummaryDTO> getUserWorkspaces(Long userId) {
         if (userId == null) {
@@ -65,38 +65,36 @@ public class WorkspaceService {
 
         List<WorkspaceSummaryDTO> summaries = new ArrayList<>();
         for (Workspace ws : workspaces) {
-            long memberCount = membershipRepository.countByWorkspaceIdAndStatus(ws.getId(), MembershipStatus.ACCEPTED);
-            Optional<Membership> membership = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
-                    ws.getId(), userId, MembershipStatus.ACCEPTED);
+            long memberCount = membershipRepository.countByWorkspaceIdAndStatus(ws.getId(),
+                    MembershipStatus.ACCEPTED);
+            Optional<Membership> membership = membershipRepository
+                    .findByWorkspaceIdAndUserIdAndStatus(ws.getId(), userId,
+                            MembershipStatus.ACCEPTED);
             MemberRole role = membership.map(Membership::getRole).orElse(MemberRole.VIEWER);
             boolean isCurrent = Objects.equals(ws.getId(), currentWorkspaceId);
 
-            summaries.add(new WorkspaceSummaryDTO(
-                    ws.getId(),
-                    ws.getName(),
-                    ws.getType(),
+            summaries.add(new WorkspaceSummaryDTO(ws.getId(), ws.getName(), ws.getType(),
                     ws.getDescription(),
                     ws.getOwner() != null ? ws.getOwner().getFullName() : "Không xác định",
-                    ws.getOwner() != null ? ws.getOwner().getId() : null,
-                    memberCount,
-                    role,
-                    isCurrent,
-                    ws.getCreatedAt()
-            ));
+                    ws.getOwner() != null ? ws.getOwner().getId() : null, memberCount, role,
+                    isCurrent, ws.getCreatedAt()));
         }
 
         return summaries;
     }
 
     /**
-     * Lấy thông tin Workspace theo ID và kiểm tra quyền truy cập của người dùng.
+     * Lấy thông tin Workspace theo ID và kiểm tra quyền truy cập của người
+     * dùng.
      */
     public Workspace getWorkspaceByIdAndCheckAccess(Long workspaceId, Long userId) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Quỹ tài chính với ID: " + workspaceId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy Quỹ tài chính với ID: " + workspaceId));
 
-        boolean hasAccess = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
-                workspaceId, userId, MembershipStatus.ACCEPTED).isPresent();
+        boolean hasAccess = membershipRepository
+                .findByWorkspaceIdAndUserIdAndStatus(workspaceId, userId, MembershipStatus.ACCEPTED)
+                .isPresent();
 
         if (!hasAccess) {
             throw new AccessDeniedException("Bạn không có quyền truy cập vào Quỹ tài chính này.");
@@ -106,8 +104,8 @@ public class WorkspaceService {
     }
 
     /**
-     * Tạo mới một Quỹ tài chính chung (SHARED).
-     * Tự động gán quyền OWNER cho người tạo trong cùng một Transaction.
+     * Tạo mới một Quỹ tài chính chung (SHARED). Tự động gán quyền OWNER cho
+     * người tạo trong cùng một Transaction.
      */
     @Transactional
     public Workspace createSharedWorkspace(WorkspaceCreateRequest request, User creator) {
@@ -120,21 +118,13 @@ public class WorkspaceService {
         }
 
         // 1. Tạo thực thể Workspace loại SHARED
-        Workspace workspace = new Workspace(
-                request.getName().trim(),
-                WorkspaceType.SHARED,
-                request.getDescription() != null ? request.getDescription().trim() : null,
-                creator
-        );
+        Workspace workspace = new Workspace(request.getName().trim(), WorkspaceType.SHARED,
+                request.getDescription() != null ? request.getDescription().trim() : null, creator);
         Workspace savedWorkspace = workspaceRepository.save(workspace);
 
         // 2. Tự động cấp quyền OWNER cho người tạo
-        Membership ownerMembership = new Membership(
-                savedWorkspace,
-                creator,
-                MemberRole.OWNER,
-                MembershipStatus.ACCEPTED
-        );
+        Membership ownerMembership = new Membership(savedWorkspace, creator, MemberRole.OWNER,
+                MembershipStatus.ACCEPTED);
         membershipRepository.save(ownerMembership);
 
         // 3. Tự động chuyển Workspace hiện tại sang Quỹ vừa tạo
@@ -150,12 +140,14 @@ public class WorkspaceService {
      * Cập nhật tên và mô tả Quỹ tài chính (Chỉ OWNER hoặc MANAGER có quyền).
      */
     @Transactional
-    public Workspace updateWorkspace(Long workspaceId, WorkspaceUpdateRequest request, Long userId) {
+    public Workspace updateWorkspace(Long workspaceId, WorkspaceUpdateRequest request,
+            Long userId) {
         Workspace workspace = getWorkspaceByIdAndCheckAccess(workspaceId, userId);
         MemberRole role = getUserRoleInWorkspace(workspaceId, userId);
 
         if (role != MemberRole.OWNER && role != MemberRole.MANAGER) {
-            throw new AccessDeniedException("Chỉ Chủ sở hữu (OWNER) hoặc Quản lý (MANAGER) mới được chỉnh sửa thông tin Quỹ.");
+            throw new AccessDeniedException(
+                    "Chỉ Chủ sở hữu (OWNER) hoặc Quản lý (MANAGER) mới được chỉnh sửa thông tin Quỹ.");
         }
 
         if (request.getName() == null || request.getName().trim().isEmpty()) {
@@ -163,7 +155,8 @@ public class WorkspaceService {
         }
 
         workspace.setName(request.getName().trim());
-        workspace.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
+        workspace.setDescription(
+                request.getDescription() != null ? request.getDescription().trim() : null);
 
         return workspaceRepository.save(workspace);
     }
@@ -175,8 +168,8 @@ public class WorkspaceService {
         Workspace workspace = getWorkspaceByIdAndCheckAccess(workspaceId, currentUserId);
         MemberRole currentUserRole = getUserRoleInWorkspace(workspaceId, currentUserId);
 
-        List<Membership> memberships = membershipRepository.findByWorkspaceIdAndStatus(
-                workspaceId, MembershipStatus.ACCEPTED);
+        List<Membership> memberships = membershipRepository.findByWorkspaceIdAndStatus(workspaceId,
+                MembershipStatus.ACCEPTED);
 
         List<WorkspaceMemberDTO> memberDTOs = new ArrayList<>();
         for (Membership m : memberships) {
@@ -188,31 +181,22 @@ public class WorkspaceService {
             boolean canBeRemoved = false;
 
             if (currentUserRole == MemberRole.OWNER) {
-                // OWNER có thể quản lý và xóa tất cả thành viên khác trừ chính mình
+                // OWNER có thể quản lý và xóa tất cả thành viên khác trừ chính
+                // mình
                 canBeManaged = !isSelf;
                 canBeRemoved = !isSelf;
             } else if (currentUserRole == MemberRole.MANAGER) {
-                // MANAGER chỉ quản lý hoặc xóa thành viên cấp thấp hơn (WRITER, VIEWER)
+                // MANAGER chỉ quản lý hoặc xóa thành viên cấp thấp hơn (WRITER,
+                // VIEWER)
                 if (!isOwner && m.getRole() != MemberRole.MANAGER && !isSelf) {
                     canBeManaged = true;
                     canBeRemoved = true;
                 }
             }
 
-            memberDTOs.add(new WorkspaceMemberDTO(
-                    m.getId(),
-                    u.getId(),
-                    u.getUsername(),
-                    u.getFullName(),
-                    u.getEmail(),
-                    u.getAvatarUrl(),
-                    m.getRole(),
-                    m.getStatus(),
-                    m.getJoinedAt(),
-                    isOwner,
-                    canBeManaged,
-                    canBeRemoved
-            ));
+            memberDTOs.add(new WorkspaceMemberDTO(m.getId(), u.getId(), u.getUsername(),
+                    u.getFullName(), u.getEmail(), u.getAvatarUrl(), m.getRole(), m.getStatus(),
+                    m.getJoinedAt(), isOwner, canBeManaged, canBeRemoved));
         }
 
         return memberDTOs;
@@ -222,12 +206,13 @@ public class WorkspaceService {
      * Thay đổi vai trò (Role) của một thành viên trong Quỹ.
      */
     @Transactional
-    public void updateMemberRole(Long workspaceId, Long targetMembershipId, MemberRole newRole, Long currentUserId) {
+    public void updateMemberRole(Long workspaceId, Long targetMembershipId, MemberRole newRole,
+            Long currentUserId) {
         Workspace workspace = getWorkspaceByIdAndCheckAccess(workspaceId, currentUserId);
         MemberRole currentUserRole = getUserRoleInWorkspace(workspaceId, currentUserId);
 
-        Membership targetMembership = membershipRepository.findById(targetMembershipId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin thành viên."));
+        Membership targetMembership = membershipRepository.findById(targetMembershipId).orElseThrow(
+                () -> new ResourceNotFoundException("Không tìm thấy thông tin thành viên."));
 
         if (!Objects.equals(targetMembership.getWorkspace().getId(), workspaceId)) {
             throw new IllegalArgumentException("Thành viên không thuộc Quỹ này.");
@@ -239,24 +224,28 @@ public class WorkspaceService {
 
         // Kiểm tra quyền hạn cơ bản đối với OWNER
         if (currentUserRole != MemberRole.OWNER && targetMembership.getRole() == MemberRole.OWNER) {
-            throw new AccessDeniedException("Chỉ Chủ sở hữu mới có quyền thay đổi vai trò của Chủ sở hữu.");
+            throw new AccessDeniedException(
+                    "Chỉ Chủ sở hữu mới có quyền thay đổi vai trò của Chủ sở hữu.");
         }
 
         // Kiểm tra không được hạ quyền OWNER cuối cùng của Quỹ
         if (targetMembership.getRole() == MemberRole.OWNER && newRole != MemberRole.OWNER) {
-            long ownerCount = membershipRepository.countByWorkspaceIdAndRoleAndStatus(
-                    workspaceId, MemberRole.OWNER, MembershipStatus.ACCEPTED);
+            long ownerCount = membershipRepository.countByWorkspaceIdAndRoleAndStatus(workspaceId,
+                    MemberRole.OWNER, MembershipStatus.ACCEPTED);
             if (ownerCount <= 1) {
-                throw new IllegalArgumentException("Không thể hạ quyền Chủ sở hữu duy nhất của Quỹ.");
+                throw new IllegalArgumentException(
+                        "Không thể hạ quyền Chủ sở hữu duy nhất của Quỹ.");
             }
         }
 
         if (currentUserRole == MemberRole.OWNER) {
             // Nếu OWNER chuyển quyền sở hữu cho người khác
-            if (newRole == MemberRole.OWNER && !Objects.equals(targetMembership.getUser().getId(), currentUserId)) {
+            if (newRole == MemberRole.OWNER
+                    && !Objects.equals(targetMembership.getUser().getId(), currentUserId)) {
                 // 1. Chuyển OWNER cũ thành MANAGER
-                Optional<Membership> currentOwnerMembership = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
-                        workspaceId, currentUserId, MembershipStatus.ACCEPTED);
+                Optional<Membership> currentOwnerMembership = membershipRepository
+                        .findByWorkspaceIdAndUserIdAndStatus(workspaceId, currentUserId,
+                                MembershipStatus.ACCEPTED);
                 currentOwnerMembership.ifPresent(m -> {
                     m.setRole(MemberRole.MANAGER);
                     membershipRepository.save(m);
@@ -278,11 +267,14 @@ public class WorkspaceService {
 
         } else if (currentUserRole == MemberRole.MANAGER) {
             // MANAGER không được đổi quyền OWNER hoặc MANAGER
-            if (targetMembership.getRole() == MemberRole.OWNER || targetMembership.getRole() == MemberRole.MANAGER) {
-                throw new AccessDeniedException("Quản lý không có quyền thay đổi vai trò của Chủ sở hữu hoặc Quản lý khác.");
+            if (targetMembership.getRole() == MemberRole.OWNER
+                    || targetMembership.getRole() == MemberRole.MANAGER) {
+                throw new AccessDeniedException(
+                        "Quản lý không có quyền thay đổi vai trò của Chủ sở hữu hoặc Quản lý khác.");
             }
             if (newRole == MemberRole.OWNER || newRole == MemberRole.MANAGER) {
-                throw new AccessDeniedException("Quản lý không có quyền nâng thành viên lên cấp Quản lý hoặc Chủ sở hữu.");
+                throw new AccessDeniedException(
+                        "Quản lý không có quyền nâng thành viên lên cấp Quản lý hoặc Chủ sở hữu.");
             }
             targetMembership.setRole(newRole);
             membershipRepository.save(targetMembership);
@@ -300,7 +292,8 @@ public class WorkspaceService {
         MemberRole currentUserRole = getUserRoleInWorkspace(workspaceId, currentUserId);
 
         Membership targetMembership = membershipRepository.findById(targetMembershipId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin thành viên cần xóa."));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy thông tin thành viên cần xóa."));
 
         if (!Objects.equals(targetMembership.getWorkspace().getId(), workspaceId)) {
             throw new IllegalArgumentException("Thành viên không thuộc Quỹ này.");
@@ -308,8 +301,8 @@ public class WorkspaceService {
 
         // Không được xóa OWNER cuối cùng
         if (targetMembership.getRole() == MemberRole.OWNER) {
-            long ownerCount = membershipRepository.countByWorkspaceIdAndRoleAndStatus(
-                    workspaceId, MemberRole.OWNER, MembershipStatus.ACCEPTED);
+            long ownerCount = membershipRepository.countByWorkspaceIdAndRoleAndStatus(workspaceId,
+                    MemberRole.OWNER, MembershipStatus.ACCEPTED);
             if (ownerCount <= 1) {
                 throw new IllegalArgumentException("Không thể xóa Chủ sở hữu duy nhất của Quỹ.");
             }
@@ -317,19 +310,23 @@ public class WorkspaceService {
 
         if (currentUserRole == MemberRole.OWNER) {
             if (Objects.equals(targetMembership.getUser().getId(), currentUserId)) {
-                throw new IllegalArgumentException("Chủ sở hữu không thể tự xóa chính mình khỏi danh sách. Vui lòng chuyển quyền hoặc Xóa Quỹ.");
+                throw new IllegalArgumentException(
+                        "Chủ sở hữu không thể tự xóa chính mình khỏi danh sách. Vui lòng chuyển quyền hoặc Xóa Quỹ.");
             }
             membershipRepository.delete(targetMembership);
         } else if (currentUserRole == MemberRole.MANAGER) {
-            if (targetMembership.getRole() == MemberRole.OWNER || targetMembership.getRole() == MemberRole.MANAGER) {
-                throw new AccessDeniedException("Quản lý không có quyền xóa Chủ sở hữu hoặc Quản lý khác.");
+            if (targetMembership.getRole() == MemberRole.OWNER
+                    || targetMembership.getRole() == MemberRole.MANAGER) {
+                throw new AccessDeniedException(
+                        "Quản lý không có quyền xóa Chủ sở hữu hoặc Quản lý khác.");
             }
             membershipRepository.delete(targetMembership);
         } else {
             throw new AccessDeniedException("Bạn không có quyền xóa thành viên khỏi Quỹ.");
         }
 
-        // Nếu thành viên bị xóa đang chọn Workspace này trong Session, tự động fallback
+        // Nếu thành viên bị xóa đang chọn Workspace này trong Session, tự động
+        // fallback
         handleSessionFallbackIfActive(workspaceId, targetMembership.getUser().getId());
     }
 
@@ -340,21 +337,25 @@ public class WorkspaceService {
     public void leaveWorkspace(Long workspaceId, Long currentUserId) {
         Workspace workspace = getWorkspaceByIdAndCheckAccess(workspaceId, currentUserId);
 
-        Membership myMembership = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
-                workspaceId, currentUserId, MembershipStatus.ACCEPTED)
-                .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải thành viên của Quỹ này."));
+        Membership myMembership = membershipRepository
+                .findByWorkspaceIdAndUserIdAndStatus(workspaceId, currentUserId,
+                        MembershipStatus.ACCEPTED)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Bạn không phải thành viên của Quỹ này."));
 
         // Nếu là Quỹ cá nhân: Không cho phép rời
         if (workspace.getType() == WorkspaceType.PERSONAL) {
-            throw new IllegalArgumentException("Bạn không thể rời khỏi Quỹ cá nhân của chính mình.");
+            throw new IllegalArgumentException(
+                    "Bạn không thể rời khỏi Quỹ cá nhân của chính mình.");
         }
 
         // Nếu là OWNER duy nhất: Không cho phép rời mà phải chuyển quyền trước
         if (myMembership.getRole() == MemberRole.OWNER) {
-            long ownerCount = membershipRepository.countByWorkspaceIdAndRoleAndStatus(
-                    workspaceId, MemberRole.OWNER, MembershipStatus.ACCEPTED);
+            long ownerCount = membershipRepository.countByWorkspaceIdAndRoleAndStatus(workspaceId,
+                    MemberRole.OWNER, MembershipStatus.ACCEPTED);
             if (ownerCount <= 1) {
-                throw new IllegalArgumentException("Bạn là Chủ sở hữu duy nhất của Quỹ. Vui lòng chuyển quyền Chủ sở hữu cho thành viên khác trước khi rời Quỹ.");
+                throw new IllegalArgumentException(
+                        "Bạn là Chủ sở hữu duy nhất của Quỹ. Vui lòng chuyển quyền Chủ sở hữu cho thành viên khác trước khi rời Quỹ.");
             }
         }
 
@@ -369,13 +370,14 @@ public class WorkspaceService {
      */
     @Transactional
     public void deleteWorkspace(Long workspaceId, Long currentUserId) {
-        Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Quỹ tài chính cần xóa."));
+        Workspace workspace = workspaceRepository.findById(workspaceId).orElseThrow(
+                () -> new ResourceNotFoundException("Không tìm thấy Quỹ tài chính cần xóa."));
 
         // 1. Kiểm tra quyền OWNER
         MemberRole role = getUserRoleInWorkspace(workspaceId, currentUserId);
         if (role != MemberRole.OWNER) {
-            throw new AccessDeniedException("Chỉ Chủ sở hữu (OWNER) mới có quyền xóa Quỹ tài chính.");
+            throw new AccessDeniedException(
+                    "Chỉ Chủ sở hữu (OWNER) mới có quyền xóa Quỹ tài chính.");
         }
 
         // 2. Không cho phép xóa Quỹ cá nhân
@@ -386,13 +388,16 @@ public class WorkspaceService {
         // 3. Kiểm tra xem có tài khoản tiền (accounts) đang liên kết không
         long accountCount = accountRepository.findByWorkspaceId(workspaceId).size();
         if (accountCount > 0) {
-            throw new IllegalStateException("Quỹ này hiện đang có " + accountCount + " tài khoản tiền. Vui lòng xử lý hoặc xóa các tài khoản tiền trước khi xóa Quỹ.");
+            throw new IllegalStateException("Quỹ này hiện đang có " + accountCount
+                    + " tài khoản tiền. Vui lòng xử lý hoặc xóa các tài khoản tiền trước khi xóa Quỹ.");
         }
 
-        // 4. Nếu Quỹ đang được chọn trong Session của người dùng hiện tại, chuyển sang Quỹ khác trước
+        // 4. Nếu Quỹ đang được chọn trong Session của người dùng hiện tại,
+        // chuyển sang Quỹ khác trước
         handleSessionFallbackIfActive(workspaceId, currentUserId);
 
-        // 5. Xóa Workspace (Cascade sẽ tự động xóa memberships và workspace_invitations)
+        // 5. Xóa Workspace (Cascade sẽ tự động xóa memberships và
+        // workspace_invitations)
         workspaceRepository.delete(workspace);
     }
 
@@ -403,14 +408,14 @@ public class WorkspaceService {
         if (workspaceId == null || userId == null) {
             return MemberRole.VIEWER;
         }
-        return membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
-                workspaceId, userId, MembershipStatus.ACCEPTED)
-                .map(Membership::getRole)
-                .orElse(MemberRole.VIEWER);
+        return membershipRepository
+                .findByWorkspaceIdAndUserIdAndStatus(workspaceId, userId, MembershipStatus.ACCEPTED)
+                .map(Membership::getRole).orElse(MemberRole.VIEWER);
     }
 
     /**
-     * Xử lý chuyển đổi Session về Quỹ mặc định nếu Workspace vừa rời/xóa đang được kích hoạt trong Session.
+     * Xử lý chuyển đổi Session về Quỹ mặc định nếu Workspace vừa rời/xóa đang
+     * được kích hoạt trong Session.
      */
     private void handleSessionFallbackIfActive(Long workspaceId, Long userId) {
         try {

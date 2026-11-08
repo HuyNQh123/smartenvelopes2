@@ -1,94 +1,61 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/main :: layout('Tạo Quỹ chung mới', 'workspaces', ~{::#main-content}, ~{}, ~{})}">
-<!-- ===================================================================
-     Giao diện Tạo Quỹ chung (Workspace) mới (Thành viên 1 phụ trách)
-     Kế thừa 100% từ Master Layout chung (layouts/main.html)
-     =================================================================== -->
-<body>
-<div id="main-content">
-
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
-
-            <!-- Nút quay lại -->
-            <div class="mb-3">
-                <a th:href="@{/workspaces}" class="text-decoration-none text-muted small">
-                    <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách Quỹ
-                </a>
-            </div>
-
-            <!-- Card biểu mẫu tạo Quỹ -->
-            <div class="card card-custom p-4 p-md-5 shadow-sm">
-                
-                <div class="text-center mb-4">
-                    <div class="d-inline-flex p-3 bg-primary-subtle text-primary rounded-circle mb-3">
-                        <i class="bi bi-people-fill fs-2"></i>
-                    </div>
-                    <h3 class="fw-bold mb-1">Khởi Tạo Quỹ Chung Mới</h3>
-                    <p class="text-muted small">
-                        Dành cho gia đình, nhóm bạn hoặc tổ chức cùng quản lý ngân sách và phong bì chi tiêu
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layouts/main :: layout('Tạo quỹ chung', 'workspaces', ~{::#main-content}, ~{}, ~{})}">
+    <body>
+        <div id="main-content" class="member-page">
+            <div class="page-header">
+                <div>
+                    <h1>
+                        Tạo quỹ chung
+                    </h1>
+                    <p class="page-description">
+                        Các trường có dấu * là bắt buộc.
                     </p>
                 </div>
-
-                <form th:action="@{/workspaces/create}" th:object="${workspaceForm}" method="post">
-                    
-                    <!-- 1. Tên Quỹ -->
+                <div class="page-actions">
+                </div>
+            </div>
+            <section class="member-section form-section">
+                <form th:action="@{/workspaces/create}" th:object="${workspaceForm}" method="post" data-submit-feedback>
                     <div class="mb-3">
-                        <label for="name" class="form-label fw-semibold">
-                            Tên Quỹ tài chính <span class="text-danger">*</span>
+                        <label for="name" class="form-label">
+                            Tên quỹ
+                            <span aria-hidden="true">
+                                *
+                            </span>
                         </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-briefcase"></i></span>
-                            <input type="text" id="name" th:field="*{name}" class="form-control" 
-                                   placeholder="Ví dụ: Quỹ Gia Đình, Quỹ Tiết Kiệm Nhóm..." 
-                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" required autofocus />
-                        </div>
-                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
-                            Tên Quỹ không hợp lệ
+                        <input id="name" type="text" th:field="*{name}" class="form-control" required maxlength="100" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" th:attr="aria-invalid=${#fields.hasErrors('name')}" aria-describedby="name-error">
+                        <div class="invalid-feedback d-block" id="name-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
                         </div>
                     </div>
-
-                    <!-- 2. Loại Quỹ (Mặc định hiển thị SHARED) -->
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Loại Quỹ</label>
-                        <input type="text" class="form-control bg-light" value="QUỸ CHUNG (SHARED)" readonly disabled />
-                        <small class="form-text text-muted">
-                            Hệ thống tự động thiết lập loại Quỹ chia sẻ chung, cho phép phân quyền và mời nhiều thành viên.
-                        </small>
+                        <label for="description" class="form-label">
+                            Mô tả
+                            <span class="text-muted">
+                                (tùy chọn)
+                            </span>
+                        </label>
+                        <textarea id="description" th:field="*{description}" class="form-control" maxlength="255" rows="3" aria-describedby="description-error" th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''" th:attr="aria-invalid=${#fields.hasErrors('description')}">
+                        </textarea>
+                        <div id="description-error" class="invalid-feedback d-block" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">
+                        </div>
                     </div>
-
-                    <!-- 3. Mô tả ngắn gọn -->
-                    <div class="mb-4">
-                        <label for="description" class="form-label fw-semibold">Mô tả hoặc Mục đích Quỹ</label>
-                        <textarea id="description" th:field="*{description}" class="form-control" rows="3" 
-                                  placeholder="Nhập ghi chú hoặc quy tắc hoạt động của quỹ (tùy chọn)..."></textarea>
-                    </div>
-
-                    <!-- Lưu ý bảo mật -->
-                    <div class="alert alert-info d-flex align-items-center small py-2 px-3 mb-4">
-                        <i class="bi bi-info-circle-fill fs-5 me-2 text-info"></i>
-                        <span>Bạn sẽ tự động trở thành <strong>Chủ sở hữu (OWNER)</strong> của Quỹ này và có toàn quyền mời, phân quyền các thành viên.</span>
-                    </div>
-
-                    <!-- Nút thao tác -->
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary py-2 fw-semibold">
-                            <i class="bi bi-check2-circle me-1"></i>Tạo Không Gian Quỹ
+                    <p class="form-text mb-4">
+                        Bạn là chủ sở hữu quỹ mới và có thể mời, phân quyền thành viên sau khi tạo.
+                    </p>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" data-loading-button>
+                            <span class="btn-label">
+                                Tạo quỹ
+                            </span>
+                            <span class="spinner-border spinner-border-sm loading-spinner" aria-hidden="true">
+                            </span>
                         </button>
-                        <a th:href="@{/workspaces}" class="btn btn-light py-2 text-muted">
-                            Hủy Bỏ
+                        <a th:href="@{/workspaces}" class="btn btn-outline-secondary">
+                            Hủy
                         </a>
                     </div>
-
                 </form>
-
-            </div>
-
+            </section>
         </div>
-    </div>
-
-</div>
-</body>
+    </body>
 </html>
-

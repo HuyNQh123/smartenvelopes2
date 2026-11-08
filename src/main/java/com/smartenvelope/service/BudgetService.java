@@ -1,115 +1,135 @@
 package com.smartenvelope.service;
 
-import java.math.BigDecimal;
-import java.time.YearMonth;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-
+import com.smartenvelope.dto.budget.*;
+import com.smartenvelope.entity.*;
+import com.smartenvelope.enums.*;
+import com.smartenvelope.exception.ResourceNotFoundException;
+import com.smartenvelope.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.smartenvelope.dto.budget.BudgetPeriodRequest;
-import com.smartenvelope.entity.BudgetPeriod;
-import com.smartenvelope.entity.Workspace;
-import com.smartenvelope.enums.BudgetStatus;
-import com.smartenvelope.enums.MemberRole;
-import com.smartenvelope.repository.BudgetPeriodRepository;
-
-import jakarta.validation.ConstraintViolation;
+import java.math.BigDecimal;
+import java.time.YearMonth;
+import java.util.List;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.validation.Validator;
 
+/**
+ * Service xử lý nghiệp vụ ngân sách và quy tắc tài chính (ví dụ quy tắc
+ * 50/30/20, thiết lập hạn mức tổng). Phụ trách bởi: Thành viên 4.
+ */
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BudgetService {
 
-    private final BudgetPeriodRepository budgetPeriodRepository;
-    private final WorkspaceContextService workspaceContextService;
+    private final BudgetPeriodRepository budgetRepository;
+    private final EnvelopeRepository envelopeRepository;
+    private final WorkspaceContextService workspaceContext;
+    private final EntityManager entityManager;
     private final Validator validator;
 
-    public BudgetService(
-            BudgetPeriodRepository budgetPeriodRepository,
-            WorkspaceContextService workspaceContextService,
-            Validator validator) {
+    public List<BudgetResponse> getCurrentWorkspaceBudgets() {
 
-        this.budgetPeriodRepository = budgetPeriodRepository;
-        this.workspaceContextService = workspaceContextService;
-        this.validator = validator;
+        return budgetRepository
+                .findByWorkspaceIdOrderByYearDescMonthDesc(workspaceContext.getCurrentWorkspaceId())
+                .stream().map(BudgetResponse::new).toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<BudgetPeriod> getPeriodsForCurrentWorkspace() {
-        Long workspaceId =
-                workspaceContextService.getCurrentWorkspaceId();
+    public BudgetPeriod getBudget(Long id) {
 
-        return budgetPeriodRepository.findByWorkspaceId(workspaceId)
-                .stream()
-                .sorted(
-                        Comparator.comparing(BudgetPeriod::getYear)
-                                .thenComparing(BudgetPeriod::getMonth)
-                                .reversed()
-                )
-                .toList();
+        Long workspaceId = workspaceContext.getCurrentWorkspaceId();
+
+        return budgetRepository.findById(id)
+                .filter(budget -> budget.getWorkspace().getId().equals(workspaceId))
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ ngân sách."));
+    }
+
+    @Transactional
+    public BudgetPeriod createBudget(BudgetRequest request) {
+
+        requireEditorRole();
+
+        Workspace workspace = workspaceContext.getCurrentWorkspace();
+
+        if (budgetRepository.findByWorkspaceIdAndMonthAndYear(workspace.getId(), request.month(),
+                request.year()).isPresent()) {
+
+            throw new IllegalArgumentException("Kỳ ngân sách này đã tồn tại.");
+        }
+
+        YearMonth month = YearMonth.of(request.year(), request.month());
+
+        BudgetPeriod budget = new BudgetPeriod(workspace, request.name().trim(),
+                month.getMonthValue(), month.getYear(), month.atDay(1), month.atEndOfMonth(),
+                BigDecimal.ZERO);
+        budget.setExpectedIncome(request.expectedIncome());
+
+        if (request.rolloverPolicy() != null) {
+
+            budget.setRolloverPolicy(request.rolloverPolicy());
+        }
+
+        return budgetRepository.save(budget);
+    }
+
+    @Transactional
+    public void confirmBudget(Long budgetId) {
+
+        requireEditorRole();
+
+        BudgetPeriod budget = getBudget(budgetId);
+        entityManager.refresh(budget, LockModeType.PESSIMISTIC_WRITE);
+
+        if (budget.getStatus() != BudgetStatus.DRAFT) {
+
+            throw new IllegalArgumentException(
+                    "Chỉ có thể xác nhận kỳ ngân sách đang ở trạng thái nháp.");
+        }
+
+        BigDecimal allocated = envelopeRepository.findByBudgetPeriodId(budgetId).stream()
+                .map(Envelope::getAllocatedAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (allocated.compareTo(budget.getTotalIncome()) != 0) {
+
+            throw new IllegalArgumentException(
+                    "Cần phân bổ đúng bằng tổng thu nhập trước khi xác nhận.");
+        }
+
+        budget.setTotalAllocated(allocated);
+        budget.setStatus(BudgetStatus.CONFIRMED);
+    }
+
+    public List<BudgetPeriod> getPeriodsForCurrentWorkspace() {
+        return budgetRepository.findByWorkspaceIdOrderByYearDescMonthDesc(workspaceContext.getCurrentWorkspaceId());
     }
 
     @Transactional
     public void createPeriod(BudgetPeriodRequest request) {
-        Workspace workspace =
-                workspaceContextService.getCurrentWorkspace();
+        var violations = validator.validate(request);
+        if (!violations.isEmpty()) throw new IllegalArgumentException(violations.iterator().next().getMessage());
+        createBudget(new BudgetRequest("Ngân sách tháng " + request.getMonth() + "/" + request.getYear(),
+                request.getMonth(), request.getYear(), BigDecimal.ZERO, null));
+    }
 
-        MemberRole role = workspaceContextService
-                .getCurrentUserRoleInWorkspace(workspace.getId())
-                .orElseThrow(() ->
-                        new AccessDeniedException(
-                                "Bạn không có quyền truy cập quỹ."));
+    public boolean canManageCurrentWorkspace() {
+        return workspaceContext.getCurrentUserRoleInWorkspace(workspaceContext.getCurrentWorkspaceId())
+                .map(role -> role == MemberRole.OWNER || role == MemberRole.MANAGER).orElse(false);
+    }
+
+    private void requireEditorRole() {
+
+        MemberRole role = workspaceContext
+                .getCurrentUserRoleInWorkspace(workspaceContext.getCurrentWorkspaceId())
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Bạn không có quyền sửa kỳ ngân sách này."));
 
         if (role != MemberRole.OWNER && role != MemberRole.MANAGER) {
-            throw new AccessDeniedException(
-                    "Chỉ chủ quỹ hoặc người quản lý được tạo kỳ ngân sách.");
+
+            throw new AccessDeniedException("Quyền xem không cho phép tạo kỳ ngân sách.");
         }
-
-        Set<ConstraintViolation<BudgetPeriodRequest>> errors =
-                validator.validate(request);
-
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException(
-                    errors.iterator().next().getMessage());
-        }
-
-        boolean exists = budgetPeriodRepository
-                .findByWorkspaceIdAndMonthAndYear(
-                        workspace.getId(),
-                        request.getMonth(),
-                        request.getYear()
-                )
-                .isPresent();
-
-        if (exists) {
-            throw new IllegalArgumentException(
-                    "Quỹ này đã có kỳ ngân sách cho tháng và năm đã chọn.");
-        }
-
-        YearMonth selectedMonth = YearMonth.of(
-                request.getYear(),
-                request.getMonth()
-        );
-
-        BudgetPeriod period = new BudgetPeriod();
-        period.setWorkspace(workspace);
-        period.setName(
-                "Ngân sách tháng "
-                        + request.getMonth()
-                        + "/"
-                        + request.getYear()
-        );
-        period.setMonth(request.getMonth());
-        period.setYear(request.getYear());
-        period.setStartDate(selectedMonth.atDay(1));
-        period.setEndDate(selectedMonth.atEndOfMonth());
-        period.setStatus(BudgetStatus.DRAFT);
-        period.setTotalIncome(BigDecimal.ZERO);
-        period.setTotalAllocated(BigDecimal.ZERO);
-
-        budgetPeriodRepository.saveAndFlush(period);
     }
 }

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <!-- Giao diện Báo cáo thống kê tài chính (Phụ trách bởi: Thành viên 5) -->
-<head th:replace="~{fragments/header :: header('Báo cáo thống kê')}">
+<head th:replace="~{fragments/resources :: head('Báo cáo thống kê')}">
 </head>
 <body>
 <div class="d-flex">
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar('reports')}"></div>
     <main class="flex-grow-1 p-4">
         <h2>Báo Cáo & Phân Tích Tài Chính</h2>
         <p class="text-muted">Biểu đồ cơ cấu chi tiêu theo danh mục và so sánh thu chi theo thời gian.</p>
@@ -16,6 +16,7 @@
     </main>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/resources :: scripts}"></th:block>
 </body>
 </html>
 

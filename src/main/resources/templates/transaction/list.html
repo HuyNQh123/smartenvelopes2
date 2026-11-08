@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <!-- Giao diện Lịch sử giao dịch thu/chi (Phụ trách bởi: Thành viên 3) -->
-<head th:replace="~{fragments/header :: header('Lịch sử giao dịch')}">
+<head th:replace="~{fragments/resources :: head('Lịch sử giao dịch')}">
 </head>
 <body>
 <div class="d-flex">
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar('transactions')}"></div>
     <main class="flex-grow-1 p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2>Lịch Sử Giao Dịch</h2>
@@ -37,6 +37,7 @@
     </main>
 </div>
 <div th:replace="~{fragments/footer :: footer}"></div>
+<th:block th:replace="~{fragments/resources :: scripts}"></th:block>
 </body>
 </html>
 

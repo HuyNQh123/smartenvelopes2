@@ -2,14 +2,20 @@ package com.smartenvelope.entity;
 
 import com.smartenvelope.enums.SavingsGoalStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Entity đại diện cho mục tiêu tiết kiệm tài chính (mua nhà, mua xe, quỹ khẩn cấp...).
- * Phụ trách bởi: Thành viên 5 (Savings, Piggy Bank & Analytics).
+ * Entity đại diện cho mục tiêu tiết kiệm tài chính (mua nhà, mua xe, quỹ khẩn
+ * cấp...). Phụ trách bởi: Thành viên 5 (Savings, Piggy Bank & Analytics).
  */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "savings_goals")
 public class SavingsGoal {
@@ -44,10 +50,9 @@ public class SavingsGoal {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public SavingsGoal() {
-    }
+    public SavingsGoal(Workspace workspace, String name, BigDecimal targetAmount,
+            LocalDate targetDate) {
 
-    public SavingsGoal(Workspace workspace, String name, BigDecimal targetAmount, LocalDate targetDate) {
         this.workspace = workspace;
         this.name = name;
         this.targetAmount = targetAmount;
@@ -58,6 +63,7 @@ public class SavingsGoal {
 
     @PrePersist
     protected void onCreate() {
+
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         if (this.currentAmount == null) {
@@ -70,78 +76,8 @@ public class SavingsGoal {
 
     @PreUpdate
     protected void onUpdate() {
+
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Workspace getWorkspace() {
-        return workspace;
-    }
-
-    public void setWorkspace(Workspace workspace) {
-        this.workspace = workspace;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public BigDecimal getTargetAmount() {
-        return targetAmount;
-    }
-
-    public void setTargetAmount(BigDecimal targetAmount) {
-        this.targetAmount = targetAmount;
-    }
-
-    public BigDecimal getCurrentAmount() {
-        return currentAmount;
-    }
-
-    public void setCurrentAmount(BigDecimal currentAmount) {
-        this.currentAmount = currentAmount;
-    }
-
-    public LocalDate getTargetDate() {
-        return targetDate;
-    }
-
-    public void setTargetDate(LocalDate targetDate) {
-        this.targetDate = targetDate;
-    }
-
-    public SavingsGoalStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(SavingsGoalStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 }

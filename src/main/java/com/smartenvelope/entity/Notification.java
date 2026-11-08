@@ -3,12 +3,18 @@ package com.smartenvelope.entity;
 import com.smartenvelope.enums.NotificationStatus;
 import com.smartenvelope.enums.NotificationType;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
 /**
- * Entity đại diện cho thông báo và cảnh báo thông minh gửi tới người dùng.
- * Phụ trách bởi: Thành viên 4 & Thành viên 5.
+ * Entity đại diện cho thông báo và cảnh báo thông minh gửi tới người dùng. Phụ
+ * trách bởi: Thành viên 4 & Thành viên 5.
  */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "notifications")
 public class Notification {
@@ -41,10 +47,9 @@ public class Notification {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public Notification() {
-    }
+    public Notification(User user, NotificationType type, String title, String message,
+            String actionUrl) {
 
-    public Notification(User user, NotificationType type, String title, String message, String actionUrl) {
         this.user = user;
         this.type = type;
         this.title = title;
@@ -55,74 +60,13 @@ public class Notification {
 
     @PrePersist
     protected void onCreate() {
+
         this.createdAt = LocalDateTime.now();
+
         if (this.status == null) {
+
             this.status = NotificationStatus.PENDING;
         }
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public NotificationType getType() {
-        return type;
-    }
-
-    public void setType(NotificationType type) {
-        this.type = type;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public NotificationStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(NotificationStatus status) {
-        this.status = status;
-    }
-
-    public String getActionUrl() {
-        return actionUrl;
-    }
-
-    public void setActionUrl(String actionUrl) {
-        this.actionUrl = actionUrl;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }
-

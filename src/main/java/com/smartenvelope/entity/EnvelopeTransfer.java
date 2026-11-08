@@ -2,14 +2,21 @@ package com.smartenvelope.entity;
 
 import com.smartenvelope.enums.TransferReason;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Entity đại diện cho lịch sử điều chuyển/bù đắp ngân sách giữa các phong bì trong cùng một kỳ.
- * Hỗ trợ nguyên tắc Zero-based Budgeting: khi một phong bì bị thiếu hụt, người dùng có thể bù đắp từ phong bì khác.
- * Phụ trách bởi: Thành viên 3 (Transaction & Ledger Processing).
+ * Entity đại diện cho lịch sử điều chuyển/bù đắp ngân sách giữa các phong bì
+ * trong cùng một kỳ. Hỗ trợ nguyên tắc Zero-based Budgeting: khi một phong bì
+ * bị thiếu hụt, người dùng có thể bù đắp từ phong bì khác. Phụ trách bởi: Thành
+ * viên 3 (Transaction & Ledger Processing).
  */
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "envelope_transfers")
 public class EnvelopeTransfer {
@@ -47,11 +54,9 @@ public class EnvelopeTransfer {
     @Column(name = "transferred_at", nullable = false, updatable = false)
     private LocalDateTime transferredAt;
 
-    public EnvelopeTransfer() {
-    }
-
     public EnvelopeTransfer(BudgetPeriod budgetPeriod, Envelope fromEnvelope, Envelope toEnvelope,
-                            BigDecimal amount, TransferReason reason, String note, User transferredBy) {
+            BigDecimal amount, TransferReason reason, String note, User transferredBy) {
+
         this.budgetPeriod = budgetPeriod;
         this.fromEnvelope = fromEnvelope;
         this.toEnvelope = toEnvelope;
@@ -63,82 +68,13 @@ public class EnvelopeTransfer {
 
     @PrePersist
     protected void onCreate() {
+
         this.transferredAt = LocalDateTime.now();
+
         if (this.reason == null) {
+
             this.reason = TransferReason.COVER_EXPENSE;
         }
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public BudgetPeriod getBudgetPeriod() {
-        return budgetPeriod;
-    }
-
-    public void setBudgetPeriod(BudgetPeriod budgetPeriod) {
-        this.budgetPeriod = budgetPeriod;
-    }
-
-    public Envelope getFromEnvelope() {
-        return fromEnvelope;
-    }
-
-    public void setFromEnvelope(Envelope fromEnvelope) {
-        this.fromEnvelope = fromEnvelope;
-    }
-
-    public Envelope getToEnvelope() {
-        return toEnvelope;
-    }
-
-    public void setToEnvelope(Envelope toEnvelope) {
-        this.toEnvelope = toEnvelope;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public TransferReason getReason() {
-        return reason;
-    }
-
-    public void setReason(TransferReason reason) {
-        this.reason = reason;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
-    public User getTransferredBy() {
-        return transferredBy;
-    }
-
-    public void setTransferredBy(User transferredBy) {
-        this.transferredBy = transferredBy;
-    }
-
-    public LocalDateTime getTransferredAt() {
-        return transferredAt;
-    }
-
-    public void setTransferredAt(LocalDateTime transferredAt) {
-        this.transferredAt = transferredAt;
-    }
 }
-

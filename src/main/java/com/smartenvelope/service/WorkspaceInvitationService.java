@@ -29,8 +29,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service quản lý Lời mời tham gia Quỹ tài chính (Workspace Invitations).
- * Phụ trách bởi: Thành viên 1.
+ * Service quản lý Lời mời tham gia Quỹ tài chính (Workspace Invitations). Phụ
+ * trách bởi: Thành viên 1.
  */
 @Service
 @Transactional(readOnly = true)
@@ -46,12 +46,9 @@ public class WorkspaceInvitationService {
 
     @Autowired
     public WorkspaceInvitationService(WorkspaceInvitationRepository invitationRepository,
-                                      WorkspaceRepository workspaceRepository,
-                                      MembershipRepository membershipRepository,
-                                      UserRepository userRepository,
-                                      NotificationRepository notificationRepository,
-                                      WorkspaceContextService workspaceContextService,
-                                      EmailService emailService) {
+            WorkspaceRepository workspaceRepository, MembershipRepository membershipRepository,
+            UserRepository userRepository, NotificationRepository notificationRepository,
+            WorkspaceContextService workspaceContextService, EmailService emailService) {
         this.invitationRepository = invitationRepository;
         this.workspaceRepository = workspaceRepository;
         this.membershipRepository = membershipRepository;
@@ -65,80 +62,88 @@ public class WorkspaceInvitationService {
      * Gửi lời mời tham gia Quỹ tới một địa chỉ email.
      */
     @Transactional
-    public WorkspaceInvitation inviteMember(Long workspaceId, WorkspaceInviteRequest request, User inviter) {
+    public WorkspaceInvitation inviteMember(Long workspaceId, WorkspaceInviteRequest request,
+            User inviter) {
         if (inviter == null) {
             throw new AccessDeniedException("Vui lòng đăng nhập để gửi lời mời.");
         }
 
         Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Quỹ tài chính ID: " + workspaceId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy Quỹ tài chính ID: " + workspaceId));
 
         // 1. Kiểm tra quyền hạn của người gửi (chỉ OWNER hoặc MANAGER)
-        Optional<Membership> inviterMembership = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
-                workspaceId, inviter.getId(), MembershipStatus.ACCEPTED);
+        Optional<Membership> inviterMembership = membershipRepository
+                .findByWorkspaceIdAndUserIdAndStatus(workspaceId, inviter.getId(),
+                        MembershipStatus.ACCEPTED);
 
-        if (inviterMembership.isEmpty() ||
-                (inviterMembership.get().getRole() != MemberRole.OWNER && inviterMembership.get().getRole() != MemberRole.MANAGER)) {
-            throw new AccessDeniedException("Chỉ Chủ sở hữu hoặc Quản lý mới có quyền gửi lời mời tham gia Quỹ.");
+        if (inviterMembership.isEmpty() || (inviterMembership.get().getRole() != MemberRole.OWNER
+                && inviterMembership.get().getRole() != MemberRole.MANAGER)) {
+            throw new AccessDeniedException(
+                    "Chỉ Chủ sở hữu hoặc Quản lý mới có quyền gửi lời mời tham gia Quỹ.");
         }
 
         // 2. Kiểm tra email người nhận
-        String recipientEmail = request.getEmail() != null ? request.getEmail().toLowerCase().trim() : "";
+        String recipientEmail = request.getEmail() != null ? request.getEmail().toLowerCase().trim()
+                : "";
         if (recipientEmail.isEmpty()) {
             throw new IllegalArgumentException("Địa chỉ email không được để trống.");
         }
 
         // 3. Không cho phép tự mời chính mình
         if (recipientEmail.equalsIgnoreCase(inviter.getEmail())) {
-            throw new IllegalArgumentException("Bạn không thể tự gửi lời mời tham gia cho chính tài khoản của mình.");
+            throw new IllegalArgumentException(
+                    "Bạn không thể tự gửi lời mời tham gia cho chính tài khoản của mình.");
         }
 
         // 4. Không cho phép mời người đã là thành viên của Quỹ
         Optional<User> existingUserOpt = userRepository.findByEmail(recipientEmail);
         if (existingUserOpt.isPresent()) {
-            boolean isMember = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
-                    workspaceId, existingUserOpt.get().getId(), MembershipStatus.ACCEPTED).isPresent();
+            boolean isMember = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(workspaceId,
+                    existingUserOpt.get().getId(), MembershipStatus.ACCEPTED).isPresent();
             if (isMember) {
-                throw new IllegalArgumentException("Người dùng có email " + recipientEmail + " đã là thành viên của Quỹ này.");
+                throw new IllegalArgumentException(
+                        "Người dùng có email " + recipientEmail + " đã là thành viên của Quỹ này.");
             }
         }
 
         // 5. Không cho phép tạo lời mời trùng lặp đang còn hiệu lực
-        boolean hasPending = invitationRepository.existsByWorkspaceIdAndEmailAndStatusAndExpiresAtAfter(
-                workspaceId, recipientEmail, InvitationStatus.PENDING, LocalDateTime.now());
+        boolean hasPending = invitationRepository
+                .existsByWorkspaceIdAndEmailAndStatusAndExpiresAtAfter(workspaceId, recipientEmail,
+                        InvitationStatus.PENDING, LocalDateTime.now());
         if (hasPending) {
-            throw new IllegalArgumentException("Đã có một lời mời đang chờ gửi tới email " + recipientEmail + ". Vui lòng chờ người nhận phản hồi hoặc hủy lời mời cũ.");
+            throw new IllegalArgumentException("Đã có một lời mời đang chờ gửi tới email "
+                    + recipientEmail + ". Vui lòng chờ người nhận phản hồi hoặc hủy lời mời cũ.");
         }
 
         // 6. Vai trò mời không được là OWNER
         MemberRole roleToAssign = request.getRole() != null ? request.getRole() : MemberRole.VIEWER;
         if (roleToAssign == MemberRole.OWNER) {
-            throw new IllegalArgumentException("Không thể mời thành viên trực tiếp với vai trò Chủ sở hữu. Bạn có thể chuyển quyền sau khi thành viên đã tham gia.");
+            throw new IllegalArgumentException(
+                    "Không thể mời thành viên trực tiếp với vai trò Chủ sở hữu. Bạn có thể chuyển quyền sau khi thành viên đã tham gia.");
         }
 
         // 7. Tạo mã bảo mật token và thời hạn lời mời (7 ngày)
         String token = UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(7);
 
-        WorkspaceInvitation invitation = new WorkspaceInvitation(
-                workspace, recipientEmail, inviter, roleToAssign, token, expiresAt);
+        WorkspaceInvitation invitation = new WorkspaceInvitation(workspace, recipientEmail, inviter,
+                roleToAssign, token, expiresAt);
         WorkspaceInvitation savedInvitation = invitationRepository.save(invitation);
 
         // 8. Gửi email qua EmailService
         String inviteUrl = "/invitations/join?token=" + token;
-        emailService.sendWorkspaceInvitationEmail(
-                recipientEmail, workspace.getName(), inviter.getFullName(), inviteUrl);
+        emailService.sendWorkspaceInvitationEmail(recipientEmail, workspace.getName(),
+                inviter.getFullName(), inviteUrl);
 
         // 9. Nếu người dùng đã có tài khoản, gửi thêm Notification hệ thống
         if (existingUserOpt.isPresent()) {
             try {
-                Notification notif = new Notification(
-                        existingUserOpt.get(),
-                        NotificationType.INVITATION,
-                        "Lời mời tham gia Quỹ tài chính",
-                        inviter.getFullName() + " đã mời bạn tham gia Quỹ \"" + workspace.getName() + "\" với vai trò " + roleToAssign + ".",
-                        "/invitations"
-                );
+                Notification notif = new Notification(existingUserOpt.get(),
+                        NotificationType.INVITATION, "Lời mời tham gia Quỹ tài chính",
+                        inviter.getFullName() + " đã mời bạn tham gia Quỹ \"" + workspace.getName()
+                                + "\" với vai trò " + roleToAssign + ".",
+                        "/invitations");
                 notificationRepository.save(notif);
             } catch (Exception ignored) {
             }
@@ -148,40 +153,41 @@ public class WorkspaceInvitationService {
     }
 
     /**
-     * Lấy danh sách các lời mời còn hiệu lực gửi tới email của người dùng hiện tại.
+     * Lấy danh sách các lời mời còn hiệu lực gửi tới email của người dùng hiện
+     * tại.
      */
     public List<WorkspaceInvitation> getPendingInvitationsForEmail(String email) {
         if (email == null || email.isBlank()) {
             return List.of();
         }
         String normalizedEmail = email.toLowerCase().trim();
-        List<WorkspaceInvitation> list = invitationRepository.findByEmailAndStatusOrderByCreatedAtDesc(
-                normalizedEmail, InvitationStatus.PENDING);
+        List<WorkspaceInvitation> list = invitationRepository
+                .findByEmailAndStatusOrderByCreatedAtDesc(normalizedEmail,
+                        InvitationStatus.PENDING);
 
         // Lọc bỏ các lời mời đã quá hạn
-        return list.stream()
-                .filter(inv -> !inv.isExpired())
-                .collect(Collectors.toList());
+        return list.stream().filter(inv -> !inv.isExpired()).collect(Collectors.toList());
     }
 
     /**
      * Lấy danh sách lời mời của một Workspace (dành cho OWNER và MANAGER).
      */
-    public List<WorkspaceInvitation> getPendingInvitationsForWorkspace(Long workspaceId, Long currentUserId) {
+    public List<WorkspaceInvitation> getPendingInvitationsForWorkspace(Long workspaceId,
+            Long currentUserId) {
         // Kiểm tra quyền truy cập Quỹ
         Optional<Membership> membership = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
                 workspaceId, currentUserId, MembershipStatus.ACCEPTED);
-        if (membership.isEmpty() ||
-                (membership.get().getRole() != MemberRole.OWNER && membership.get().getRole() != MemberRole.MANAGER)) {
-            throw new AccessDeniedException("Chỉ Chủ sở hữu hoặc Quản lý mới có quyền xem danh sách lời mời.");
+        if (membership.isEmpty() || (membership.get().getRole() != MemberRole.OWNER
+                && membership.get().getRole() != MemberRole.MANAGER)) {
+            throw new AccessDeniedException(
+                    "Chỉ Chủ sở hữu hoặc Quản lý mới có quyền xem danh sách lời mời.");
         }
 
-        List<WorkspaceInvitation> list = invitationRepository.findByWorkspaceIdAndStatusOrderByCreatedAtDesc(
-                workspaceId, InvitationStatus.PENDING);
+        List<WorkspaceInvitation> list = invitationRepository
+                .findByWorkspaceIdAndStatusOrderByCreatedAtDesc(workspaceId,
+                        InvitationStatus.PENDING);
 
-        return list.stream()
-                .filter(inv -> !inv.isExpired())
-                .collect(Collectors.toList());
+        return list.stream().filter(inv -> !inv.isExpired()).collect(Collectors.toList());
     }
 
     /**
@@ -189,14 +195,14 @@ public class WorkspaceInvitationService {
      */
     @Transactional
     public void cancelInvitation(Long invitationId, Long currentUserId) {
-        WorkspaceInvitation invitation = invitationRepository.findById(invitationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin lời mời."));
+        WorkspaceInvitation invitation = invitationRepository.findById(invitationId).orElseThrow(
+                () -> new ResourceNotFoundException("Không tìm thấy thông tin lời mời."));
 
         Optional<Membership> membership = membershipRepository.findByWorkspaceIdAndUserIdAndStatus(
                 invitation.getWorkspace().getId(), currentUserId, MembershipStatus.ACCEPTED);
 
-        if (membership.isEmpty() ||
-                (membership.get().getRole() != MemberRole.OWNER && membership.get().getRole() != MemberRole.MANAGER)) {
+        if (membership.isEmpty() || (membership.get().getRole() != MemberRole.OWNER
+                && membership.get().getRole() != MemberRole.MANAGER)) {
             throw new AccessDeniedException("Bạn không có quyền hủy lời mời này.");
         }
 
@@ -209,7 +215,8 @@ public class WorkspaceInvitationService {
      */
     public WorkspaceInvitation getInvitationByToken(String token) {
         return invitationRepository.findByToken(token)
-                .orElseThrow(() -> new ResourceNotFoundException("Mã lời mời không tồn tại hoặc đường link không hợp lệ."));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Mã lời mời không tồn tại hoặc đường link không hợp lệ."));
     }
 
     /**
@@ -221,8 +228,8 @@ public class WorkspaceInvitationService {
             throw new AccessDeniedException("Vui lòng đăng nhập để chấp nhận lời mời.");
         }
 
-        WorkspaceInvitation invitation = invitationRepository.findById(invitationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin lời mời."));
+        WorkspaceInvitation invitation = invitationRepository.findById(invitationId).orElseThrow(
+                () -> new ResourceNotFoundException("Không tìm thấy thông tin lời mời."));
 
         return processAcceptInvitation(invitation, user);
     }
@@ -241,25 +248,29 @@ public class WorkspaceInvitationService {
     }
 
     /**
-     * Logic chấp nhận lời mời chung (kiểm tra hạn, email, cập nhật Membership và Session).
+     * Logic chấp nhận lời mời chung (kiểm tra hạn, email, cập nhật Membership
+     * và Session).
      */
     private Membership processAcceptInvitation(WorkspaceInvitation invitation, User user) {
         // 1. Kiểm tra trạng thái và hạn sử dụng
         if (!invitation.canBeAccepted()) {
-            throw new IllegalStateException("Lời mời này đã hết hạn hoặc không còn ở trạng thái chờ chấp nhận.");
+            throw new IllegalStateException(
+                    "Lời mời này đã hết hạn hoặc không còn ở trạng thái chờ chấp nhận.");
         }
 
-        // 2. Kiểm tra email tài khoản đăng nhập phải trùng khớp với email được mời
+        // 2. Kiểm tra email tài khoản đăng nhập phải trùng khớp với email được
+        // mời
         if (!user.getEmail().equalsIgnoreCase(invitation.getEmail())) {
-            throw new AccessDeniedException("Tài khoản đang đăng nhập (" + user.getEmail() +
-                    ") không khớp với địa chỉ email nhận lời mời (" + invitation.getEmail() + ").");
+            throw new AccessDeniedException("Tài khoản đang đăng nhập (" + user.getEmail()
+                    + ") không khớp với địa chỉ email nhận lời mời (" + invitation.getEmail()
+                    + ").");
         }
 
         Workspace workspace = invitation.getWorkspace();
 
         // 3. Tạo hoặc kích hoạt Membership
-        Optional<Membership> existingMembership = membershipRepository.findByWorkspaceIdAndUserId(
-                workspace.getId(), user.getId());
+        Optional<Membership> existingMembership = membershipRepository
+                .findByWorkspaceIdAndUserId(workspace.getId(), user.getId());
 
         Membership membership;
         if (existingMembership.isPresent()) {
@@ -268,12 +279,8 @@ public class WorkspaceInvitationService {
             membership.setStatus(MembershipStatus.ACCEPTED);
             membership.setJoinedAt(LocalDateTime.now());
         } else {
-            membership = new Membership(
-                    workspace,
-                    user,
-                    invitation.getRole(),
-                    MembershipStatus.ACCEPTED
-            );
+            membership = new Membership(workspace, user, invitation.getRole(),
+                    MembershipStatus.ACCEPTED);
         }
         Membership savedMembership = membershipRepository.save(membership);
 
@@ -299,11 +306,12 @@ public class WorkspaceInvitationService {
             throw new AccessDeniedException("Vui lòng đăng nhập để thực hiện thao tác.");
         }
 
-        WorkspaceInvitation invitation = invitationRepository.findById(invitationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin lời mời."));
+        WorkspaceInvitation invitation = invitationRepository.findById(invitationId).orElseThrow(
+                () -> new ResourceNotFoundException("Không tìm thấy thông tin lời mời."));
 
         if (!user.getEmail().equalsIgnoreCase(invitation.getEmail())) {
-            throw new AccessDeniedException("Bạn không có quyền từ chối lời mời gửi tới địa chỉ email khác.");
+            throw new AccessDeniedException(
+                    "Bạn không có quyền từ chối lời mời gửi tới địa chỉ email khác.");
         }
 
         invitation.setStatus(InvitationStatus.DECLINED);

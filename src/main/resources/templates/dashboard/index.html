@@ -1,123 +1,55 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layouts/main :: layout('Bảng điều khiển', 'dashboard', ~{::#main-content}, ~{}, ~{})}">
-<!-- ===================================================================
-     Giao diện Bảng điều khiển (Dashboard) - Phụ trách bởi: Thành viên 5
-     Kế thừa 100% từ Master Layout chung (layouts/main.html)
-     =================================================================== -->
-<body>
-<div id="main-content">
-    
-    <!-- Tiêu đề & Lời chào người dùng -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-1">
-                Xin chào, <span th:text="${currentUser != null ? currentUser.fullName : 'Bạn'}">Người dùng</span>! 👋
-            </h2>
-            <p class="text-muted mb-0">
-                Chào mừng bạn quay trở lại SmartEnvelope. Dưới đây là tổng quan tình hình tài chính của bạn.
-            </p>
-        </div>
-        <div class="mt-3 mt-md-0 d-flex align-items-center bg-white px-3 py-2 rounded-3 shadow-sm border" th:if="${currentWorkspace != null}">
-            <div class="me-3 text-primary fs-4"><i class="bi bi-briefcase-fill"></i></div>
-            <div>
-                <small class="text-muted d-block" style="font-size: 0.72rem;">Không gian đang làm việc</small>
-                <strong class="text-dark" th:text="${currentWorkspace.name}">Quỹ cá nhân</strong>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/main :: layout('Tổng quan', 'dashboard', ~{::#main-content}, ~{}, ~{})}">
+    <body>
+        <div id="main-content" class="member-page">
+            <div class="page-header">
+                <div>
+                    <h1>
+                        Tổng quan
+                    </h1>
+                    <p class="page-description">
+                        Quỹ và không gian làm việc của bạn.
+                    </p>
+                </div>
+                <a th:href="@{/workspaces}" class="btn btn-outline-secondary">
+                    Quản lý quỹ
+                </a>
             </div>
+            <section class="member-section" th:if="${currentWorkspace != null}" aria-labelledby="current-workspace-title">
+                <div class="section-heading">
+                    <h2 id="current-workspace-title">
+                        Quỹ đang sử dụng
+                    </h2>
+                    <span class="badge status-active">
+                        Đang sử dụng
+                    </span>
+                </div>
+                <h3 class="workspace-title" th:text="${currentWorkspace.name}">
+                    Tên quỹ
+                </h3>
+                <p class="text-muted" th:if="${currentWorkspace.description != null and !currentWorkspace.description.isEmpty()}" th:text="${currentWorkspace.description}">
+                </p>
+                <div class="page-actions">
+                    <a th:href="@{/workspaces/{id}(id=${currentWorkspace.id})}" class="btn btn-primary">
+                        Thông tin và thành viên
+                    </a>
+                    <a th:href="@{/invitations}" class="btn btn-outline-secondary">
+                        Lời mời của tôi
+                    </a>
+                </div>
+            </section>
+            <section class="member-section empty-state" th:unless="${currentWorkspace != null}">
+                <h2>
+                    Chưa chọn quỹ làm việc
+                </h2>
+                <p>
+                    Chọn một quỹ hiện có hoặc tạo quỹ chung để bắt đầu.
+                </p>
+                <a th:href="@{/workspaces}" class="btn btn-primary">
+                    Xem quỹ của bạn
+                </a>
+            </section>
         </div>
-    </div>
-
-    <!-- Hàng các thẻ thống kê tổng quan (Dữ liệu Demo kiểm thử giao diện Master Layout) -->
-    <div class="row g-3 mb-4">
-        <!-- 1. Tổng số dư -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card card-custom p-3 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-medium">Tổng Số Dư</span>
-                    <div class="p-2 bg-primary-subtle text-primary rounded-3">
-                        <i class="bi bi-wallet2 fs-5"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold text-dark mb-1">10.000.000 ₫</h3>
-                <div class="small text-success">
-                    <i class="bi bi-arrow-up-right me-1"></i>Dữ liệu demo minh họa
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. Tổng thu tháng này -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card card-custom p-3 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-medium">Tổng Thu Tháng Này</span>
-                    <div class="p-2 bg-success-subtle text-success rounded-3">
-                        <i class="bi bi-graph-up-arrow fs-5"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold text-success mb-1">+15.000.000 ₫</h3>
-                <div class="small text-muted">
-                    <i class="bi bi-calendar3 me-1"></i>Tháng hiện tại
-                </div>
-            </div>
-        </div>
-
-        <!-- 3. Tổng chi tháng này -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card card-custom p-3 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-medium">Tổng Chi Tháng Này</span>
-                    <div class="p-2 bg-danger-subtle text-danger rounded-3">
-                        <i class="bi bi-graph-down-arrow fs-5"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold text-danger mb-1">-5.000.000 ₫</h3>
-                <div class="small text-danger">
-                    <i class="bi bi-pie-chart me-1"></i>50% ngân sách tháng
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. Ngân sách khả dụng -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card card-custom p-3 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-medium">Ngân Sách Khả Dụng</span>
-                    <div class="p-2 bg-warning-subtle text-warning rounded-3">
-                        <i class="bi bi-piggy-bank fs-5"></i>
-                    </div>
-                </div>
-                <h3 class="fw-bold text-warning mb-1">5.000.000 ₫</h3>
-                <div class="small text-muted">
-                    <i class="bi bi-check2-circle me-1"></i>An toàn chi tiêu
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Khung thông báo và nút chuyển hướng nhanh dành cho các thành viên -->
-    <div class="card card-custom p-4 border-primary border-opacity-25 bg-white">
-        <div class="d-flex align-items-center mb-3">
-            <i class="bi bi-info-circle-fill text-primary fs-3 me-3"></i>
-            <div>
-                <h5 class="mb-0 fw-bold">Khung Giao Diện Dùng Chung (Master Layout v1.0)</h5>
-                <small class="text-muted">Đã sẵn sàng cho Thành viên 2, 3, 4, 5 phát triển các màn hình nghiệp vụ</small>
-            </div>
-        </div>
-        <p class="text-secondary small mb-3">
-            Các thành viên chỉ cần tạo file HTML và khai báo kế thừa layout chung:
-            <code class="px-2 py-1 bg-light rounded text-primary">&lt;html th:replace="~{layouts/main :: layout('Tiêu đề', 'activeMenu', ~{::#main-content}, ~{}, ~{})}"&gt;</code>
-        </p>
-        <div class="d-flex flex-wrap gap-2">
-            <a th:href="@{/accounts}" class="btn btn-sm btn-outline-primary"><i class="bi bi-credit-card me-1"></i>Tài khoản (TV2)</a>
-            <a th:href="@{/envelopes}" class="btn btn-sm btn-outline-primary"><i class="bi bi-envelope me-1"></i>Phong bì (TV2)</a>
-            <a th:href="@{/transactions}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left-right me-1"></i>Giao dịch (TV3)</a>
-            <a th:href="@{/budgets}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pie-chart me-1"></i>Ngân sách (TV4)</a>
-            <a th:href="@{/savings}" class="btn btn-sm btn-outline-primary"><i class="bi bi-piggy-bank me-1"></i>Tiết kiệm (TV4)</a>
-            <a th:href="@{/alerts}" class="btn btn-sm btn-outline-primary"><i class="bi bi-bell me-1"></i>Cảnh báo (TV4)</a>
-            <a th:href="@{/reports}" class="btn btn-sm btn-outline-primary"><i class="bi bi-graph-up me-1"></i>Báo cáo (TV5)</a>
-        </div>
-    </div>
-
-</div>
-</body>
+    </body>
 </html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    <span th:fragment="roleLabel(role)" class="badge status-neutral"
+      th:text="${role == null ? 'Chưa xác định' : (role.name() == 'OWNER' ? 'Chủ sở hữu' : (role.name() == 'MANAGER' ? 'Quản lý' : (role.name() == 'WRITER' ? 'Ghi chép' : (role.name() == 'VIEWER' ? 'Chỉ xem' : (role.name() == 'ADMIN' ? 'Quản trị viên' : 'Người dùng')))))}">
+        Vai trò
+    </span>
+    <div th:fragment="invitationList(items)" class="invitation-list">
+        <article class="invitation-row" th:each="inv : ${items}">
+            <div class="workspace-copy">
+                <span class="badge status-pending">
+                    Đang chờ phản hồi
+                </span>
+                <h3 th:text="${inv.workspace.name}">
+                    Tên quỹ
+                </h3>
+                <p class="text-muted mb-2" th:if="${inv.workspace.description != null}" th:text="${inv.workspace.description}">
+                </p>
+                <div class="inline-meta">
+                    <span>
+                        Người mời:
+                        <strong th:text="${inv.invitedBy.fullName}">
+                        </strong>
+                    </span>
+                    <span th:replace="~{fragments/member-ui :: roleLabel(${inv.role})}">
+                    </span>
+                    <span>
+                        Hết hạn:
+                        <time th:text="${#temporals.format(inv.expiresAt, 'dd/MM/yyyy HH:mm')}">
+                        </time>
+                    </span>
+                </div>
+            </div>
+            <div class="page-actions">
+                <form th:action="@{/invitations/{id}/accept(id=${inv.id})}" method="post">
+                    <button class="btn btn-primary" type="submit">
+                        Chấp nhận
+                    </button>
+                </form>
+                <form th:action="@{/invitations/{id}/decline(id=${inv.id})}" method="post" onsubmit="return confirm('Bạn muốn từ chối lời mời này?');">
+                    <button type="submit" class="btn btn-outline-secondary">
+                        Từ chối
+                    </button>
+                </form>
+            </div>
+        </article>
+    </div>
+    <span th:fragment="userStatus(status)" class="badge" th:classappend="${status.name() == 'ACTIVE' ? 'status-active' : (status.name() == 'LOCKED' ? 'status-danger' : 'status-inactive')}" th:text="${status.name() == 'ACTIVE' ? 'Hoạt động' : (status.name() == 'LOCKED' ? 'Đã khóa' : 'Chưa kích hoạt')}">
+        Trạng thái
+    </span>
+    <th:block th:fragment="categoryFields">
+        <p class="form-text mb-4">
+            Các trường có dấu * là bắt buộc.
+        </p>
+        <div class="mb-3">
+            <label for="name" class="form-label">
+                Tên danh mục *
+            </label>
+            <input type="text" id="name" th:field="*{name}" class="form-control" maxlength="100" required th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" th:attr="aria-invalid=${#fields.hasErrors('name')}" aria-describedby="name-error name-help">
+            <div id="name-help" class="form-text">
+                Tên không được trùng với danh mục cùng loại.
+            </div>
+            <div id="name-error" class="invalid-feedback d-block" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+            </div>
+        </div>
+        <fieldset class="mb-3" aria-describedby="type-error">
+            <legend class="form-label">
+                Loại danh mục *
+            </legend>
+            <div class="inline-meta">
+                <div class="form-check" th:each="t : ${categoryTypes}">
+                    <input class="form-check-input" type="radio" th:field="*{type}" th:value="${t}" th:id="'type_' + ${t}" required>
+                    <label class="form-check-label" th:for="'type_' + ${t}" th:text="${t.name() == 'INCOME' ? 'Thu nhập' : 'Chi tiêu'}">
+                    </label>
+                </div>
+            </div>
+            <div id="type-error" class="invalid-feedback d-block" th:if="${#fields.hasErrors('type')}" th:errors="*{type}">
+            </div>
+        </fieldset>
+        <div class="mb-3">
+            <label for="icon" class="form-label">
+                Biểu tượng
+            </label>
+            <input type="text" id="icon" th:field="*{icon}" class="form-control" maxlength="50" list="category-icons" aria-describedby="icon-error icon-help">
+            <datalist id="category-icons">
+                <option value="bi-tag" label="Thẻ danh mục"></option>
+                <option value="bi-cart" label="Mua sắm"></option>
+                <option value="bi-house" label="Nhà ở"></option>
+                <option value="bi-wallet2" label="Ví tiền"></option>
+                <option value="bi-gift" label="Quà tặng"></option>
+                <option value="bi-briefcase" label="Công việc"></option>
+            </datalist>
+            <div id="icon-help" class="form-text">Chọn biểu tượng gợi ý hoặc giữ mã biểu tượng đang sử dụng.</div>
+            <div id="icon-error" class="invalid-feedback d-block" th:if="${#fields.hasErrors('icon')}" th:errors="*{icon}">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="colorInput" class="form-label">
+                Màu nhận diện
+            </label>
+            <div class="color-control">
+                <input type="color" id="colorPicker" class="form-control form-control-color" aria-label="Chọn màu nhận diện" th:value="${categoryRequest.color != null ? categoryRequest.color : '#0d6efd'}" data-color-picker="colorInput">
+                <input type="text" id="colorInput" th:field="*{color}" class="form-control" maxlength="20" aria-describedby="color-error" th:classappend="${#fields.hasErrors('color')} ? 'is-invalid' : ''" data-color-text="colorPicker">
+            </div>
+            <div id="color-error" class="invalid-feedback d-block" th:if="${#fields.hasErrors('color')}" th:errors="*{color}">
+            </div>
+        </div>
+        <div class="form-check mb-4">
+            <input type="checkbox" class="form-check-input" id="isActive" th:field="*{isActive}">
+            <label class="form-check-label" for="isActive">
+                Sử dụng danh mục cho giao dịch mới
+            </label>
+        </div>
+    </th:block>
+</html>

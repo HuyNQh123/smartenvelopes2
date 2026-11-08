@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * Repository thao tác dữ liệu với bảng workspaces.
- * Phụ trách bởi: Thành viên 1 & Thành viên 2.
+ * Repository thao tác dữ liệu với bảng workspaces. Phụ trách bởi: Thành viên 1
+ * & Thành viên 2.
  */
 @Repository
 public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
@@ -21,6 +21,7 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
     List<Workspace> findByOwnerIdAndType(Long ownerId, WorkspaceType type);
 
     @Query("SELECT w FROM Workspace w JOIN Membership m ON m.workspace.id = w.id WHERE m.user.id = :userId AND m.status = com.smartenvelope.enums.MembershipStatus.ACCEPTED")
-    List<Workspace> findWorkspacesJoinedByUser(@Param("userId") Long userId);
+    List<Workspace> findWorkspacesJoinedByUser(
+            @Param("userId")
+            Long userId);
 }
-

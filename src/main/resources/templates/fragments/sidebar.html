@@ -1,140 +1,48 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<!-- ===================================================================
-     Fragment Sidebar: Menu điều hướng bên trái dùng chung cho 5 thành viên
-     Hỗ trợ active link tự động theo tham số activeMenu truyền từ trang con
-     =================================================================== -->
-<div th:fragment="sidebar(activeMenu)" class="sidebar">
-
-    <!-- Bộ chọn Quỹ trên màn hình di động (hiển thị khi màn hình nhỏ) -->
-    <div class="d-block d-sm-none mb-3 p-2 bg-light rounded border" th:if="${currentWorkspace != null}">
-        <div class="small text-muted mb-1"><i class="bi bi-wallet2 me-1"></i> Quỹ hiện tại:</div>
-        <div class="fw-semibold text-truncate mb-2" th:text="${currentWorkspace.name}">Quỹ cá nhân</div>
-        <div class="dropdown">
-            <button class="btn btn-outline-primary btn-sm w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                Đổi Quỹ làm việc
-            </button>
-            <ul class="dropdown-menu shadow w-100">
-                <li th:each="ws : ${availableWorkspaces}">
-                    <form th:action="@{/workspace/switch}" method="post" class="m-0 p-0">
-                        <input type="hidden" name="workspaceId" th:value="${ws.id}" />
-                        <button type="submit" class="dropdown-item py-2" 
-                                th:classappend="${currentWorkspace != null and ws.id == currentWorkspace.id} ? 'active' : ''"
-                                th:text="${ws.name}">Tên Quỹ</button>
-                    </form>
-                </li>
-            </ul>
+<!-- Giữ chữ ký sidebar(activeMenu); ghép header tại đây cho cả hai cơ chế layout. -->
+<th:block th:fragment="sidebar(activeMenu)">
+    <header th:replace="~{fragments/header :: header}"></header>
+    <aside id="sidebarMenu" class="sidebar app-sidebar offcanvas offcanvas-start" tabindex="-1"
+           aria-labelledby="sidebarTitle" data-bs-scroll="false">
+        <div class="offcanvas-header">
+            <h2 class="offcanvas-title" id="sidebarTitle">Điều hướng</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng menu điều hướng"></button>
         </div>
-        <hr class="my-3">
-    </div>
-
-    <!-- Nhóm 1: Tổng quan -->
-    <div class="sidebar-heading">Tổng quan</div>
-    <ul class="nav flex-column mb-2">
-        <li class="nav-item">
-            <a th:href="@{/dashboard}" class="nav-link" th:classappend="${activeMenu == 'dashboard'} ? 'active' : ''">
-                <i class="bi bi-speedometer2"></i>
-                <span>Bảng điều khiển</span>
-            </a>
-        </li>
-    </ul>
-
-    <!-- Nhóm 2: Quản lý Quỹ & Tài khoản (Thành viên 1 & 2) -->
-    <div class="sidebar-heading">Tài chính & Phong bì</div>
-    <ul class="nav flex-column mb-2">
-        <li class="nav-item">
-            <a th:href="@{/accounts}" class="nav-link" th:classappend="${activeMenu == 'accounts'} ? 'active' : ''">
-                <i class="bi bi-credit-card-2-front"></i>
-                <span>Tài khoản tiền</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a th:href="@{/envelopes}" class="nav-link" th:classappend="${activeMenu == 'envelopes'} ? 'active' : ''">
-                <i class="bi bi-envelope-paper"></i>
-                <span>Phong bì chi tiêu</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a th:href="@{/transactions}" class="nav-link" th:classappend="${activeMenu == 'transactions'} ? 'active' : ''">
-                <i class="bi bi-arrow-left-right"></i>
-                <span>Giao dịch thu / chi</span>
-            </a>
-        </li>
-    </ul>
-
-    <!-- Nhóm 3: Kế hoạch & Mục tiêu (Thành viên 4) -->
-    <div class="sidebar-heading">Kế hoạch tài chính</div>
-    <ul class="nav flex-column mb-2">
-        <li class="nav-item">
-            <a th:href="@{/budgets}" class="nav-link" th:classappend="${activeMenu == 'budgets'} ? 'active' : ''">
-                <i class="bi bi-pie-chart"></i>
-                <span>Ngân sách định kỳ</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a th:href="@{/savings}" class="nav-link" th:classappend="${activeMenu == 'savings'} ? 'active' : ''">
-                <i class="bi bi-piggy-bank"></i>
-                <span>Mục tiêu tiết kiệm</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a th:href="@{/alerts}" class="nav-link" th:classappend="${activeMenu == 'alerts' or activeMenu == 'notifications'} ? 'active' : ''">
-                <i class="bi bi-bell"></i>
-                <span>Cảnh báo chi tiêu</span>
-            </a>
-        </li>
-    </ul>
-
-    <!-- Nhóm 4: Báo cáo & Phân tích (Thành viên 5) -->
-    <div class="sidebar-heading">Báo cáo & Phân tích</div>
-    <ul class="nav flex-column mb-2">
-        <li class="nav-item">
-            <a th:href="@{/reports}" class="nav-link" th:classappend="${activeMenu == 'reports'} ? 'active' : ''">
-                <i class="bi bi-graph-up-arrow"></i>
-                <span>Báo cáo tài chính</span>
-            </a>
-        </li>
-    </ul>
-
-    <!-- Nhóm 5: Không gian làm việc (Thành viên 1) -->
-    <div class="sidebar-heading">Không gian làm việc</div>
-    <ul class="nav flex-column mb-2">
-        <li class="nav-item">
-            <a th:href="@{/workspaces}" class="nav-link" th:classappend="${activeMenu == 'workspaces'} ? 'active' : ''">
-                <i class="bi bi-briefcase"></i>
-                <span>Quản lý không gian quỹ</span>
-            </a>
-        </li>
-    </ul>
-
-    <!-- Nhóm 6: Quản trị hệ thống (Chỉ dành riêng cho ADMIN) -->
-    <th:block sec:authorize="hasRole('ADMIN')">
-        <div class="sidebar-heading text-warning d-flex align-items-center">
-            <i class="bi bi-shield-lock-fill me-1"></i> Quản trị hệ thống
+        <div class="offcanvas-body">
+            <nav aria-label="Điều hướng chính">
+                <div class="sidebar-heading">Tài chính</div>
+                <ul class="nav flex-column">
+                    <li th:replace="~{fragments/sidebar :: navItem('/dashboard', 'Tổng quan', 'bi-grid-1x2', ${activeMenu == 'dashboard'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/accounts', 'Tài khoản', 'bi-credit-card-2-front', ${activeMenu == 'accounts'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/transactions', 'Giao dịch', 'bi-arrow-left-right', ${activeMenu == 'transactions'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/envelopes', 'Phong bì', 'bi-envelope', ${activeMenu == 'envelopes'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/budgets', 'Ngân sách', 'bi-pie-chart', ${activeMenu == 'budgets'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/savings', 'Mục tiêu tiết kiệm', 'bi-piggy-bank', ${activeMenu == 'savings'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/reports', 'Báo cáo', 'bi-bar-chart', ${activeMenu == 'reports'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/alerts', 'Cảnh báo chi tiêu', 'bi-bell', ${activeMenu == 'alerts' or activeMenu == 'notifications'})}"></li>
+                </ul>
+                <div class="sidebar-heading">Không gian làm việc</div>
+                <ul class="nav flex-column">
+                    <li th:replace="~{fragments/sidebar :: navItem('/workspaces', 'Quản lý quỹ', 'bi-wallet2', ${activeMenu == 'workspaces'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/invitations', 'Lời mời', 'bi-envelope-open', ${activeMenu == 'invitations'})}"></li>
+                </ul>
+                <th:block sec:authorize="hasRole('ADMIN')">
+                <div class="sidebar-heading">Quản trị hệ thống</div>
+                <ul class="nav flex-column">
+                    <li th:replace="~{fragments/sidebar :: navItem('/admin/users', 'Quản lý người dùng', 'bi-people', ${activeMenu == 'admin-users' or activeMenu == 'admin'})}"></li>
+                    <li th:replace="~{fragments/sidebar :: navItem('/admin/categories', 'Quản lý danh mục', 'bi-tags', ${activeMenu == 'admin-categories'})}"></li>
+                </ul>
+                </th:block>
+            </nav>
+            <div class="sidebar-note">Quản lý tài chính mỗi ngày</div>
         </div>
-        <ul class="nav flex-column mb-3">
-            <li class="nav-item">
-                <a th:href="@{/admin/users}" class="nav-link" th:classappend="${activeMenu == 'admin-users' or activeMenu == 'admin'} ? 'active' : ''">
-                    <i class="bi bi-people-fill text-warning"></i>
-                    <span>Quản lý người dùng</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a th:href="@{/admin/categories}" class="nav-link" th:classappend="${activeMenu == 'admin-categories'} ? 'active' : ''">
-                    <i class="bi bi-tags-fill text-warning"></i>
-                    <span>Quản lý danh mục</span>
-                </a>
-            </li>
-        </ul>
-    </th:block>
-
-    <!-- Thông tin phiên bản & Trợ giúp -->
-    <div class="mt-auto pt-3 px-2 border-top text-muted small" style="font-size: 0.75rem;">
-        <div class="d-flex justify-content-between align-items-center">
-            <span>SmartEnvelope</span>
-            <span class="badge bg-secondary-subtle text-secondary">v1.0</span>
-        </div>
-        <div class="text-secondary mt-1">Phương pháp quản lý 6 phong bì</div>
-    </div>
-</div>
+    </aside>
+</th:block>
+<li th:fragment="navItem(route, label, icon, selected)" class="nav-item">
+    <a th:href="@{${route}}" class="nav-link" th:classappend="${selected} ? 'active' : ''"
+       th:attr="aria-current=${selected} ? 'page' : null, data-nav-alias=${route == '/alerts'} ? @{/notifications} : null">
+        <i class="bi" th:classappend="${icon}" aria-hidden="true"></i><span th:text="${label}">Điều hướng</span>
+    </a>
+</li>
 </html>

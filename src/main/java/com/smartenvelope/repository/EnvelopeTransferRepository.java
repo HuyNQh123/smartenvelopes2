@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * Repository thao tác dữ liệu với bảng envelope_transfers.
- * Phụ trách bởi: Thành viên 3 (Transaction & Ledger Processing).
+ * Repository thao tác dữ liệu với bảng envelope_transfers. Phụ trách bởi: Thành
+ * viên 3 (Transaction & Ledger Processing).
  */
 @Repository
 public interface EnvelopeTransferRepository extends JpaRepository<EnvelopeTransfer, Long> {
@@ -19,4 +19,3 @@ public interface EnvelopeTransferRepository extends JpaRepository<EnvelopeTransf
 
     List<EnvelopeTransfer> findByToEnvelopeId(Long toEnvelopeId);
 }
-
